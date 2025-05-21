@@ -1,0 +1,46 @@
+{
+  "rgb": {
+    "cherry": [
+      200,
+      30,
+      50
+    ],
+    "lipstick": [
+      200,
+      30,
+      50
+    ],
+    "peach": [
+      200,
+      30,
+      50
+    ],
+    "bold lipstick": [
+      200,
+      30,
+      50
+    ],
+    "bold red": [
+      200,
+      30,
+      50
+    ]
+  },
+  "simplified": {
+    "cherry": [
+      "bright red"
+    ],
+    "lipstick": [
+      "bright red"
+    ],
+    "peach": [
+      "soft pink"
+    ],
+    "bold lipstick": [
+      "bright red"
+    ],
+    "bold red": [
+      "bright red"
+    ]
+  }
+}
