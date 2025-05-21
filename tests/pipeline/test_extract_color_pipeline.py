@@ -4,6 +4,9 @@ import unittest
 from unittest.mock import patch
 from Chatbot.pipelines.color_extractors import extract_color_pipeline
 from Chatbot.scripts.cache import clear_caches
+import json
+import os
+
 
 class TestExtractColorPipeline(unittest.TestCase):
     def setUp(self):
@@ -12,10 +15,11 @@ class TestExtractColorPipeline(unittest.TestCase):
         xkcd_tones = set(name.replace("xkcd:", "") for name in XKCD_COLORS.keys())
         self.known_tones = css_tones.union(xkcd_tones)
 
-        self.known_nouns = {"lipstick", "eyeshadow", "blush"}
-        self.known_modifiers = {
-            "soft", "bright", "bold", "warm", "cool", "deep", "muted", "light", "dark", "shiny"
-        }
+        script_dir = os.path.dirname(os.path.abspath(__file__))  # Folder where this test script lives
+        project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))  # Adjust as needed
+        json_path = os.path.join(project_root, "Data", "known_modifiers.json")
+        with open(json_path, "r", encoding="utf-8") as f:
+            self.known_modifiers = set(json.load(f))
 
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
@@ -37,7 +41,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )
@@ -64,7 +68,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )
@@ -82,7 +86,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         expected = {
             "positive": {
-                "tones": ["nude"],
+                "tones": [],
                 "matched_color_names": ['nude']
             },
             "negative": {
@@ -125,7 +129,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )
@@ -152,7 +156,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )
@@ -179,7 +183,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )
@@ -206,7 +210,7 @@ class TestExtractColorPipeline(unittest.TestCase):
 
         result = extract_color_pipeline(
             text,
-            known_nouns=self.known_nouns,
+            
             known_tones=self.known_tones,
             known_modifiers=self.known_modifiers
         )

@@ -24,6 +24,11 @@
       200,
       30,
       50
+    ],
+    "nude": [
+      200,
+      30,
+      50
     ]
   },
   "simplified": {
@@ -41,6 +46,9 @@
     ],
     "bold red": [
       "bright red"
+    ],
+    "nude": [
+      "nude"
     ]
   }
 }
