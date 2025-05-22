@@ -1,19 +1,20 @@
 from collections import defaultdict
-from collections import Counter
-
 import spacy
 from typing import List, Set, Dict
-
 import webcolors
-from spacy.tokens import Token
-
-import os
 import requests
-import json
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env
+import os
+import json
 
+# Dynamically locate the known_modifiers.json regardless of where the script is run
+this_dir = os.path.dirname(os.path.abspath(__file__))  # path to colors.py
+data_path = os.path.abspath(os.path.join(this_dir, "..", "..", "Data", "known_modifiers.json"))
+
+with open(data_path, "r", encoding="utf-8") as f:
+    known_modifiers = set(json.load(f))
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -254,9 +255,13 @@ def simplify_color_description_with_llm(color_phrase: str) -> list[str]:
         raise ValueError("OPENROUTER_API_KEY not found in .env")
 
     prompt = (
-        f"Simplify the color '{color_phrase}' using a base tone (e.g. red, pink, beige) "
-        f"and a modifier (e.g. bright, soft, dark). Return only the simplified phrase, "
-        f"no explanation, no punctuation, no quotes. Example: 'bright red'"
+        f"You are a beauty product color simplifier.\n"
+        f"Your task is to check if the word '{color_phrase}' refers to a color or shade used in cosmetics, fashion, or design.\n"        
+        f"- If it **is a color**, return a simplified tone + modifier phrase (e.g., 'bright pink').\n"
+        f"- If it **is not a color**, return an empty string.\n"
+        f"\nReturn only the result. No explanations. No punctuation. No formatting. Just the simplified color or an empty string."
+
+
     )
 
     headers = {
@@ -276,16 +281,25 @@ def simplify_color_description_with_llm(color_phrase: str) -> list[str]:
         raise RuntimeError(f"OpenRouter API error {response.status_code}: {response.text}")
 
     raw_output = response.json()["choices"][0]["message"]["content"].strip().lower()
+    if raw_output == "":
+        return []
 
-    # ✅ Load all valid webcolors as tones
-    tone_keywords = set(map(str.lower, webcolors.CSS3_NAMES_TO_HEX.keys()))
-    modifier_keywords = {"bright", "soft", "muted", "warm", "cool", "dark", "light", "bold", "shiny", "deep"}
-
-    # Tokenize and find valid modifier + tone pairs
     tokens = raw_output.split()
+
+    from matplotlib.colors import XKCD_COLORS
+
+    css_tones = set(map(str.lower, webcolors.CSS3_NAMES_TO_HEX.keys()))
+    xkcd_tones = set(name.replace("xkcd:", "").lower() for name in XKCD_COLORS)
+    tone_keywords = css_tones.union(xkcd_tones)
+
+    def is_valid_tone(tone: str) -> bool:
+        return tone in tone_keywords or tone.endswith(("ish", "y")) or len(tone) <= 10
+
     for i in range(len(tokens) - 1):
         mod, tone = tokens[i], tokens[i + 1]
-        if mod in modifier_keywords and tone in tone_keywords:
+        print(f"[DEBUG] Checking pair: {mod=} {tone=}")
+        if mod in known_modifiers and is_valid_tone(tone):
+            print(f"[DEBUG] ✅ Accepted simplified pair: {mod} {tone}")
             return [f"{mod} {tone}"]
 
     # Fallback: return first tone only if no modifier found
