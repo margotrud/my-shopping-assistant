@@ -371,8 +371,8 @@ class TestColorPhraseExtraction(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_case_51(self):
-        input_text = "looking for a nude base"
-        expected = ["nude"]
+        input_text = "show me a cute pink gloss"
+        expected = ["pink"]
         actual = extract_all_descriptive_color_phrases(input_text,  known_tones,
                                                        known_modifiers, debug=True)
         self.assertEqual(expected, actual)

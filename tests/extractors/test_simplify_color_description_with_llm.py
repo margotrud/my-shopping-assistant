@@ -2,73 +2,18 @@ import json
 import os
 import requests
 import unittest
-
+from Chatbot.extractors.colors import simplify_color_description_with_llm
 import webcolors
 from dotenv import load_dotenv
 load_dotenv()
 load_dotenv(dotenv_path="path/to/.env")
 
-from unittest.mock import patch
+# Load known_modifiers.json dynamically for testing
+this_dir = os.path.dirname(os.path.abspath(__file__))
+mod_path = os.path.abspath(os.path.join(this_dir, "..", "..", "Data", "known_modifiers.json"))
 
-def simplify_color_description_with_llm(color_phrase: str) -> list[str]:
-    """
-    Uses an LLM via OpenRouter to simplify a descriptive color name (e.g. 'cherry')
-    into a clean [modifier + tone] format (e.g. ['bright red']).
-
-    Args:
-        color_phrase (str): A non-standard color term (e.g. 'cherry')
-
-    Returns:
-        list[str]: A single-item list like ['bright red']
-    """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise ValueError("OPENROUTER_API_KEY not found in .env")
-
-    prompt = (
-        f"Simplify the color '{color_phrase}' using a base tone (e.g. red, pink, beige) "
-        f"and a modifier (e.g. bright, soft, dark). Return only the simplified phrase, "
-        f"no explanation, no punctuation, no quotes. Example: 'bright red'"
-    )
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
-    data = {
-        "model": "mistralai/mistral-7b-instruct",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-        "max_tokens": 15,
-    }
-
-    response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, data=json.dumps(data))
-    if response.status_code != 200:
-        raise RuntimeError(f"OpenRouter API error {response.status_code}: {response.text}")
-
-    raw_output = response.json()["choices"][0]["message"]["content"].strip().lower()
-
-    # ✅ Load all valid webcolors as tones
-    tone_keywords = set(map(str.lower, webcolors.CSS3_NAMES_TO_HEX.keys()))
-    modifier_keywords = {"bright", "soft", "muted", "warm", "cool", "dark", "light", "bold", "shiny", "deep"}
-
-    # Tokenize and find valid modifier + tone pairs
-    tokens = raw_output.split()
-    for i in range(len(tokens) - 1):
-        mod, tone = tokens[i], tokens[i + 1]
-        if mod in modifier_keywords and tone in tone_keywords:
-            return [f"{mod} {tone}"]
-
-    # Fallback: return first tone only if no modifier found
-    for tok in tokens:
-        if tok in tone_keywords:
-            return [tok]
-
-    return []  # Nothing matched
-
-
-
+with open(mod_path, "r", encoding="utf-8") as f:
+    known_modifiers = set(json.load(f))
 
 import unittest
 from unittest.mock import patch
