@@ -98,17 +98,28 @@ def extract_color_pipeline(
             logger.info(f"[DEBUG] ➤ Is in RGB MAP? {'✅' if phrase in rgb_map else '❌'}")
 
             try:
+                rgb = None
                 if phrase in rgb_map:
-                    logger.info(f"[✅ SHORTCUT] '{phrase}' found in rgb_map → {rgb_map[phrase]}")
-
-                    # ✅ Detect if phrase has a modifier or is a compound (e.g. 'nude base', 'soft red')
-                    if len(phrase.split()) > 1:
-                        logger.info(f"[🧠 SEMANTIC OVERRIDE] '{phrase}' is compound → running full LLM logic")
-                        # fall through → don't continue
+                    rgb = rgb_map[phrase]
+                    logger.info(f"[✅ RGB DIRECT MATCH] '{phrase}' found in rgb_map → {rgb}")
+                else:
+                    cached_rgb = get_cached_rgb(phrase)
+                    if cached_rgb:
+                        rgb = cached_rgb
+                        logger.info(f"[🧠 RGB CACHE HIT] → {phrase} → {rgb}")
                     else:
-                        all_color_names.add(phrase)
-                        simplified_phrases.append(phrase)
-                        continue
+                        rgb = get_rgb_from_descriptive_color_llm_first(phrase)
+                        if rgb:
+                            store_rgb_to_cache(phrase, rgb)
+                            logger.info(f"[💾 RGB CACHE STORE] → {phrase} → {rgb}")
+
+                # ➕ Now always match similar colors
+                if rgb:
+                    matches = find_similar_color_names(rgb, rgb_map)
+                    logger.info(f"[🔍 RGB MATCH] for '{phrase}' → {matches}")
+                    all_color_names.update(matches)
+                else:
+                    logger.warning(f"[⚠️ NO RGB MATCH] for phrase '{phrase}'")
 
                 # Step 1: RGB cache
                 cached_rgb = get_cached_rgb(phrase)
