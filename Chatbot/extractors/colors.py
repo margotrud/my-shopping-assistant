@@ -145,9 +145,15 @@ def extract_all_descriptive_color_phrases(
             print(f"[DEBUG] Neighbors for '{word}' → prev='{prev.text if prev else '∅'}', next='{next_.text if next_ else '∅'}'")
             print(f"[DEBUG] → prev_is_adj={prev_is_adj}, next_is_adj={next_is_adj}")
 
+        if next_ and next_.pos_ == "NOUN":
+            filtered_singles.append(word)
+            if debug:
+                print(f"[DEBUG] ✅ Kept: '{word}' — Followed by NOUN")
+            continue
+
         if prev_is_adj or next_is_adj:
             if debug:
-                print(f"[DEBUG] ❌ Rejected: '{word}' — Adjacent to another ADJ")
+                print(f"[DEBUG] ❌ Rejected: '{word}' — Adjacent to another ADJ and not followed by NOUN")
             continue
 
         filtered_singles.append(word)
