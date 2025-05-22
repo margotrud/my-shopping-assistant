@@ -94,34 +94,36 @@ def extract_color_pipeline(
                 logger.warning(f"[⚠️ SKIP SEGMENT] '{seg}' → {e}")
 
         for phrase in all_phrases:
+            logger.info(f"[🧪 RAW PHRASE] → '{phrase}'")
+            print(f"[🧪 RAW PHRASE] → '{phrase}'")
+
+            if phrase.lower() not in known_modifiers and phrase.lower() not in known_tones:
+                logger.info(f"[⛔ SKIPPED LLM] '{phrase}' not in known modifiers or tones → skipping LLM call")
+                print(f"[⛔ SKIPPED LLM] '{phrase}' not in known modifiers or tones → skipping LLM call")
+                continue
+
             logger.info(f"[DEBUG] ➤ Processing phrase: '{phrase}'")
             logger.info(f"[DEBUG] ➤ Is in RGB MAP? {'✅' if phrase in rgb_map else '❌'}")
 
             try:
-                rgb = None
+                # ✅ If it's a known color, use it directly and skip LLM/simplify
                 if phrase in rgb_map:
                     rgb = rgb_map[phrase]
                     logger.info(f"[✅ RGB DIRECT MATCH] '{phrase}' found in rgb_map → {rgb}")
-                else:
-                    cached_rgb = get_cached_rgb(phrase)
-                    if cached_rgb:
-                        rgb = cached_rgb
-                        logger.info(f"[🧠 RGB CACHE HIT] → {phrase} → {rgb}")
-                    else:
-                        rgb = get_rgb_from_descriptive_color_llm_first(phrase)
-                        if rgb:
-                            store_rgb_to_cache(phrase, rgb)
-                            logger.info(f"[💾 RGB CACHE STORE] → {phrase} → {rgb}")
-
-                # ➕ Now always match similar colors
-                if rgb:
                     matches = find_similar_color_names(rgb, rgb_map)
                     logger.info(f"[🔍 RGB MATCH] for '{phrase}' → {matches}")
                     all_color_names.update(matches)
-                else:
-                    logger.warning(f"[⚠️ NO RGB MATCH] for phrase '{phrase}'")
 
-                # Step 1: RGB cache
+                    # ✅ Treat as tone directly if in known_tones
+                    if phrase in known_tones:
+                        logger.info(f"[🧠 DIRECT TONE ADD] '{phrase}' is a known tone")
+                        simplified_phrases.append(phrase)
+                    else:
+                        logger.info(f"[ℹ️ NO TONE CLASSIFICATION] '{phrase}' not in known tones")
+
+                    continue  # ✅ No need to run LLM
+
+                # Step 1: RGB cache lookup
                 cached_rgb = get_cached_rgb(phrase)
                 if cached_rgb:
                     rgb = cached_rgb
@@ -132,12 +134,33 @@ def extract_color_pipeline(
                         store_rgb_to_cache(phrase, rgb)
                         logger.info(f"[💾 RGB CACHE STORE] → {phrase} → {rgb}")
 
+                # Step 2: Match similar names
                 if rgb:
                     matches = find_similar_color_names(rgb, rgb_map)
                     logger.info(f"[🔍 RGB MATCH] for '{phrase}' → {matches}")
                     all_color_names.update(matches)
                 else:
                     logger.warning(f"[⚠️ NO RGB MATCH] for phrase '{phrase}'")
+
+                # Step 3: Simplification (only for unknown phrases)
+                cached_simplified = get_cached_simplified(phrase)
+                if cached_simplified:
+                    simplified = cached_simplified
+                    logger.info(f"[🧠 SIMPLIFY CACHE HIT] → {phrase} → {simplified}")
+                else:
+                    simplified = simplify_color_description_with_llm(phrase)
+                    print(f"[🧠 LLM RESULT] → {simplified}")
+                    logger.info(f"[🧠 LLM RESULT] → {simplified}")
+
+                    if simplified:
+                        store_simplified_to_cache(phrase, simplified)
+                        logger.info(f"[💾 SIMPLIFY CACHE STORE] → {phrase} → {simplified}")
+
+                simplified_phrases.extend(simplified)
+                print(f"[🎯 SIMPLIFIED PHRASES ADDED] {simplified}")
+
+            except Exception as e:
+                logger.error(f"[❌ ERROR] during RGB/simplify for '{phrase}' → {e}")
 
                 # ✅ Always try to simplify, even if RGB lookup fails
                 cached_simplified = get_cached_simplified(phrase)
@@ -180,7 +203,14 @@ def extract_color_pipeline(
                 simplified_phrases, known_tones, known_modifiers
             )
             tones = cat.get("tones", [])
-            print(f"[✅ FINAL TONES] {tones}")
+            modifiers = cat.get("modifiers", [])
+
+            print(f"[🎯 FINAL COLOR CATEGORIZATION]")
+            print(f"    → TONES:     {tones}")
+            print(f"    → MODIFIERS: {modifiers}")
+            print(f"    → PHRASES:   {simplified_phrases}")
+
+
 
         except Exception as e:
             logger.error(f"[❌ ERROR] during categorization → {e}")

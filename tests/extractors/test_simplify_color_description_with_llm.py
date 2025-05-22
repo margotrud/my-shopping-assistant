@@ -521,5 +521,6 @@ class TestSimplifyColorDescriptionLLM(unittest.TestCase):
         }
         self.assertEqual(["muted brown"], simplify_color_description_with_llm("clay"))
 
+
 if __name__ == "__main__":
     unittest.main()

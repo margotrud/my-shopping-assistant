@@ -29,6 +29,96 @@
       200,
       30,
       50
+    ],
+    "elegant": [
+      200,
+      30,
+      50
+    ],
+    "soft beige": [
+      222,
+      190,
+      160
+    ],
+    "bright pink": [
+      255,
+      105,
+      180
+    ],
+    "deep plum": [
+      102,
+      0,
+      102
+    ],
+    "cool": [
+      240,
+      230,
+      200
+    ],
+    "soft": [
+      240,
+      230,
+      200
+    ],
+    "warm": [
+      240,
+      230,
+      200
+    ],
+    "dark browns": [
+      101,
+      67,
+      33
+    ],
+    "peachy": [
+      255,
+      218,
+      185
+    ],
+    "soft pink": [
+      255,
+      182,
+      193
+    ],
+    "light coral": [
+      255,
+      182,
+      193
+    ],
+    "shimmery bronze": [
+      205,
+      127,
+      50
+    ],
+    "red": [
+      200,
+      30,
+      50
+    ],
+    "brown": [
+      200,
+      30,
+      50
+    ],
+    "beige": [
+      200,
+      30,
+      50
+    ],
+    "orange": [
+      255,
+      69,
+      0
+    ],
+    "coral": [
+      255,
+      105,
+      180
+    ],
+    "pink": [
+      200,
+      30,
+      50
     ]
   },
   "simplified": {
@@ -38,9 +128,6 @@
     "lipstick": [
       "bright red"
     ],
-    "peach": [
-      "soft pink"
-    ],
     "bold lipstick": [
       "bright red"
     ],
@@ -49,6 +136,60 @@
     ],
     "nude": [
       "nude"
+    ],
+    "elegant": [
+      "soft gray"
+    ],
+    "soft beige": [
+      "soft beige"
+    ],
+    "bright pink": [
+      "bright pink"
+    ],
+    "deep plum": [
+      "dark purple"
+    ],
+    "cool": [
+      "cool blue"
+    ],
+    "soft": [
+      "soft beige"
+    ],
+    "warm": [
+      "warm beige"
+    ],
+    "dark browns": [
+      "dark brown"
+    ],
+    "peachy": [
+      "soft pink"
+    ],
+    "soft pink": [
+      "soft pink"
+    ],
+    "light coral": [
+      "soft pink"
+    ],
+    "red": [
+      "bright red"
+    ],
+    "brown": [
+      "dark beige"
+    ],
+    "beige": [
+      "soft beige"
+    ],
+    "orange": [
+      "bright orange"
+    ],
+    "coral": [
+      "bright orange"
+    ],
+    "pink": [
+      "soft pink"
+    ],
+    "shimmery bronze": [
+      "shimmery bronze"
     ]
   }
 }

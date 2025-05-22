@@ -262,12 +262,16 @@ def simplify_color_description_with_llm(color_phrase: str) -> list[str]:
 
     prompt = (
         f"You are a beauty product color simplifier.\n"
-        f"Your task is to check if the word '{color_phrase}' refers to a color or shade used in cosmetics, fashion, or design.\n"        
-        f"- If it **is a color**, return a simplified tone + modifier phrase (e.g., 'bright pink').\n"
-        f"- If it **is not a color**, return an empty string.\n"
-        f"\nReturn only the result. No explanations. No punctuation. No formatting. Just the simplified color or an empty string."
-
-
+        f"Your task is to determine if the word '{color_phrase}' refers to an actual color or shade used in makeup, cosmetics, or fashion.\n"
+        f"If it **clearly refers to a color**, return a simplified version using a tone and optional modifier (e.g., 'soft pink', 'deep coral').\n"
+        f"If it **is not a color** (e.g., 'elegant', 'flawless', 'luxurious', 'matte', 'shiny', 'clean'), return an empty string.\n"
+        f"⚠️ Do NOT try to guess or interpret the word metaphorically. Do NOT return something close — only return color terms.\n"
+        f"\nExamples:\n"
+        f" - 'elegant' → ''\n"
+        f" - 'success' → ''\n"
+        f" - 'peachy' → 'light peach'\n"
+        f" - 'blush' → 'soft pink'\n"
+        f"\nReturn only the result. No explanations. No punctuation. No formatting."
     )
 
     headers = {
