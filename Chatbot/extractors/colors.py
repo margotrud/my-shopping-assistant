@@ -18,6 +18,8 @@ with open(data_path, "r", encoding="utf-8") as f:
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
+all_webcolor_names = set(name.lower() for name in webcolors.CSS3_NAMES_TO_HEX)
+
 
 ###################### I. Extract colors : Test checked and rewritten
 def extract_all_descriptive_color_phrases(
@@ -38,7 +40,8 @@ def extract_all_descriptive_color_phrases(
     tokens = list(doc)
     token_texts = [t.text for t in tokens]
     token_counts = Counter(token_texts)
-    blocked_color_name = "lipstick"
+    # 🚫 Only allowed hardcoded block (lipstick exists in webcolors but is not a tone)
+    hardcoded_blocked_nouns = {"lipstick"}
 
     if debug:
         print(f"\n[DEBUG] Raw input: '{text}'")
@@ -50,22 +53,32 @@ def extract_all_descriptive_color_phrases(
     raw_compound_phrases = []  # used for accurate token counting
     singles = []
 
-    # Build compound phrases
     for i in range(len(tokens) - 1):
         t1, t2 = tokens[i], tokens[i + 1]
-        if (
-            t1.text in known_modifiers and
-            singularize(t2.text) in known_tones and
-            singularize(t2.text) != blocked_color_name
-        ):
+
+        t1_is_valid = t1.text in known_modifiers
+        t2_is_valid = singularize(t2.text) in known_tones
+
+        if t1_is_valid and t2_is_valid:
+            # Reject if t2 is a NOUN and not a known tone
+            t2_norm = singularize(t2.text).lower()
+
+            if (
+                    t2.pos_ == "NOUN"
+                    and t2_norm not in known_tones
+                    and t2_norm not in all_webcolor_names
+            ) or t2_norm in hardcoded_blocked_nouns:
+
+                if debug:
+                    print(f"[DEBUG] 🚫 Rejected compound: '{t1.text} {t2.text}' — NOUN not in tone or webcolors")
+                singles.append(t1.text)  # Keep modifier as standalone
+                continue
+
             compound = f"{t1.text} {t2.text}"
             compounds.add(compound)
             raw_compound_phrases.append(compound)
             if debug:
                 print(f"[DEBUG] ✅ Added compound: '{compound}'")
-        else:
-            if debug:
-                print(f"[DEBUG] ⛔ Rejected compound: '{t1.text} {t2.text}' — Not in known sets")
 
     # Dedup compound list for later filtering
     compounds = set(compounds)
@@ -92,7 +105,7 @@ def extract_all_descriptive_color_phrases(
         token_text = t.text
         normalized = singularize(token_text)
 
-        if (token_text in known_modifiers or normalized in known_tones) and normalized != blocked_color_name:
+        if (token_text in known_modifiers or normalized in known_tones) and normalized not in hardcoded_blocked_nouns:
             total_occurrences = token_counts[token_text]
             compound_occurrences = compound_token_counts[token_text]
 
