@@ -117,33 +117,27 @@ def contains_sentiment_splitter_with_segments(text: str):
 def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list[str]) -> dict[str, list[str]]:
     """
     Classify each independent segment into positive or negative categories using detect_sentiment().
-    Neutral results are mapped to positive by default.
-
-    Args:
-        has_splitter (bool): Whether sentiment splitter was detected
-        segments (list[str]): List of text segments (clauses), assumed independent
-
-    Returns:
-        dict: {
-            "positive": [...segments...],
-            "negative": [...segments...]
-        }
+    Neutral results are mapped using dynamic negation detection (spaCy-based).
     """
     classification = {
         "positive": [],
         "negative": []
     }
 
-    def map_sentiment(sent: str) -> str:
-        # Map neutral to positive by default
-        return "negative" if sent == "negative" else "positive"
+    def map_sentiment(predicted: str, text: str) -> str:
+        # Dynamically detect negation if model returned "neutral"
+        if predicted == "neutral" and is_negated(text):
+            print(f"[🧠 NEGATION DETECTED] '{text}' → forcing 'negative'")
+            return "negative"
+        return predicted
 
-    # Even if no splitter, treat whole sentence as one segment
     for seg in segments:
         sentiment = detect_sentiment(seg)
-        mapped_sentiment = map_sentiment(sentiment)
-        classification[mapped_sentiment].append(seg)
+        mapped = map_sentiment(sentiment, seg)
+        classification[mapped].append(seg)
 
     return classification
 
-
+def is_negated(text: str) -> bool:
+    doc = nlp(text)
+    return any(tok.dep_ == "neg" for tok in doc)

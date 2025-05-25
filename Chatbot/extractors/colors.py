@@ -1,13 +1,14 @@
 from collections import defaultdict
 import spacy
 from typing import List, Set, Dict
-import webcolors
 import requests
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env
 import os
 import json
+import webcolors
+all_webcolor_names = set(webcolors.CSS3_NAMES_TO_HEX.keys())
 
 # Dynamically locate the known_modifiers.json regardless of where the script is run
 this_dir = os.path.dirname(os.path.abspath(__file__))  # path to colors.py
@@ -26,7 +27,9 @@ def extract_all_descriptive_color_phrases(
     text: str,
     known_tones: Set[str],
     known_modifiers: Set[str],
-    debug: bool = False,
+    all_webcolor_names: Set[str],
+
+        debug: bool = False,
 ) -> List[str]:
     """
     Extracts descriptive color phrases with detailed code-level debugging.
@@ -40,6 +43,7 @@ def extract_all_descriptive_color_phrases(
     tokens = list(doc)
     token_texts = [t.text for t in tokens]
     token_counts = Counter(token_texts)
+
     # 🚫 Only allowed hardcoded block (lipstick exists in webcolors but is not a tone)
     hardcoded_blocked_nouns = {"lipstick"}
 
@@ -59,26 +63,44 @@ def extract_all_descriptive_color_phrases(
         t1_is_valid = t1.text in known_modifiers
         t2_is_valid = singularize(t2.text) in known_tones
 
-        if t1_is_valid and t2_is_valid:
-            # Reject if t2 is a NOUN and not a known tone
-            t2_norm = singularize(t2.text).lower()
+        if debug:
+            print(f"\n[DEBUG] Checking pair: '{t1.text}' + '{t2.text}'")
+            print(
+                f"  → t1 = {t1.text}, is_modifier = {t1_is_valid}, is_tone/webcolor = {t1.text in known_tones or t1.text in all_webcolor_names}")
+            print(
+                f"  → t2 = {t2.text}, is_tone = {t2.text in known_tones}, is_webcolor = {t2.text in all_webcolor_names}, POS = {t2.pos_}")
 
-            if (
-                    t2.pos_ == "NOUN"
-                    and t2_norm not in known_tones
-                    and t2_norm not in all_webcolor_names
-            ) or t2_norm in hardcoded_blocked_nouns:
+        if not (t1_is_valid and t2_is_valid):
+            if debug:
+                print(f"[DEBUG] ❌ Skipping pair '{t1.text} {t2.text}' — t1_valid={t1_is_valid}, t2_valid={t2_is_valid}")
+            continue
 
-                if debug:
-                    print(f"[DEBUG] 🚫 Rejected compound: '{t1.text} {t2.text}' — NOUN not in tone or webcolors")
-                singles.append(t1.text)  # Keep modifier as standalone
-                continue
+        t2_norm = singularize(t2.text).lower()
 
-            compound = f"{t1.text} {t2.text}"
+        if (
+                t2.pos_ == "NOUN"
+                and t2_norm not in known_tones
+                and t2_norm not in all_webcolor_names
+        ) or t2_norm in hardcoded_blocked_nouns:
+            if debug:
+                print(f"[DEBUG] 🚫 Rejected compound: '{t1.text} {t2.text}' — NOUN not in tone or webcolors")
+            singles.append(t1.text)
+            continue
+
+        t1_is_tone = singularize(t1.text) in known_tones or t1.text in all_webcolor_names
+        t2_is_tone = singularize(t2.text) in known_tones or t2.text in all_webcolor_names
+
+        compound = f"{t1.text} {t2.text}"
+        if t1_is_tone and t2_is_tone:
             compounds.add(compound)
             raw_compound_phrases.append(compound)
             if debug:
-                print(f"[DEBUG] ✅ Added compound: '{compound}'")
+                print(f"[DEBUG] ✅ Added tone-tone compound: '{compound}'")
+
+        compounds.add(compound)
+        raw_compound_phrases.append(compound)
+        if debug:
+            print(f"[DEBUG] ✅ Added compound: '{compound}'")
 
     # Dedup compound list for later filtering
     compounds = set(compounds)

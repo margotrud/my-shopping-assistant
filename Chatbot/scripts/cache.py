@@ -35,6 +35,8 @@ def clear_caches():
     _simplify_cache.clear()
 
 
+
+
 def get_full_cache():
     return {
         "rgb": _rgb_cache.copy(),

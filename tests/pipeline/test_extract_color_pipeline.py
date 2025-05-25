@@ -1,147 +1,157 @@
-import os
-import json
 import unittest
-import webcolors
-from matplotlib.colors import XKCD_COLORS
 from unittest.mock import patch
-
 from Chatbot.pipelines.color_extractors import extract_color_pipeline
+
+import logging
+import sys
+
+# Setup custom logger for ColorPipeline
+logger = logging.getLogger("ColorPipeline")
+logger.setLevel(logging.DEBUG)
+
+# Remove existing handlers to avoid duplicates
+if logger.hasHandlers():
+    logger.handlers.clear()
+
+# Add a stream handler explicitly to stdout
+stream_handler = logging.StreamHandler(sys.stdout)
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+
 
 
 class TestExtractColorPipeline(unittest.TestCase):
     def setUp(self):
-        css_tones = set(webcolors.CSS3_NAMES_TO_HEX.keys())
-        xkcd_tones = set(name.replace("xkcd:", "") for name in XKCD_COLORS.keys())
-        self.known_tones = css_tones.union(xkcd_tones)
-
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.abspath(os.path.join(script_dir, "..", ".."))
-        json_path = os.path.join(project_root, "Data", "known_modifiers.json")
-        with open(json_path, "r", encoding="utf-8") as f:
-            self.known_modifiers = set(json.load(f))
+        from Chatbot.scripts.cache import clear_caches
+        clear_caches()
+        self.known_tones = {"red", "pink", "orange", "beige"}
+        self.known_modifiers = {"soft", "bright", "warm"}
 
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_01(self, mock_find_similar, mock_rgb_lookup):
-        text = "I want a cherry red lipstick"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["red", "crimson"]
+    def test_case_01(self, mock_find_similar, mock_get_rgb):
+        text = "I love soft pink shades"
+        mock_get_rgb.return_value = (255, 182, 193)
+        mock_find_similar.return_value = ["soft pink", "light pink", "pink"]
+
+        result = extract_color_pipeline(text, self.known_tones, self.known_modifiers, rgb_map={})
 
         expected = {
-            "positive": {"tones": ["red"], "matched_color_names": ["crimson", "red"]},
-            "negative": {"tones": [], "matched_color_names": []}
+            "positive": {
+                "base_rgb": (255, 182, 193),
+                "threshold": 60.0,
+                "matched_color_names": ["light pink", "pink", "soft pink"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
         }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
         self.assertEqual(expected, result)
 
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_02(self, mock_find_similar, mock_rgb_lookup):
-        text = "Show me a cute pink gloss"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["pink"]
+    def test_case_02(self, mock_find_similar, mock_get_rgb):
+        text = "I don't want anything orange"
+        mock_get_rgb.return_value = (255, 165, 0)
+        mock_find_similar.return_value = ["orange", "neon orange"]
+
+        result = extract_color_pipeline(text, self.known_tones, self.known_modifiers, rgb_map={})
 
         expected = {
-            "positive": {"tones": ["pink"], "matched_color_names": ["pink"]},
-            "negative": {"tones": [], "matched_color_names": []}
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (255, 165, 0),
+                "threshold": 60.0,
+                "matched_color_names": ["neon orange", "orange"]
+            }
         }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
-        self.assertEqual(expected, result)
-
-    @patch("Chatbot.pipelines.color_extractors.simplify_color_description_with_llm")
-    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
-    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_03(self, mock_find_similar, mock_rgb_lookup, mock_simplify):
-        text = "Looking for a nude base"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["nude"]
-        mock_simplify.return_value = ["nude"]
-
-        expected = {
-            "positive": {"tones": [], "matched_color_names": ["nude"]},
-            "negative": {"tones": [], "matched_color_names": []}
-        }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
         self.assertEqual(expected, result)
 
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_04(self, mock_find_similar, mock_rgb_lookup):
-        text = "Do you have something in brown"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["brown"]
+    def test_case_03(self, mock_find_similar, mock_get_rgb):
+        text = "I like cherry red but not bright red"
+        mock_get_rgb.side_effect = [(220, 20, 60), (255, 0, 0)]
+        mock_find_similar.side_effect = [
+            ["cherry red", "red", "ruby"],
+            ["red", "bright red"]
+        ]
+
+        result = extract_color_pipeline(text, self.known_tones, self.known_modifiers)
 
         expected = {
-            "positive": {"tones": ["brown"], "matched_color_names": ["brown"]},
-            "negative": {"tones": [], "matched_color_names": []}
+            "positive": {
+                "base_rgb": (220, 20, 60),
+                "threshold": 60.0,
+                "matched_color_names": ["cherry red", "ruby"]
+            },
+            "negative": {
+                "base_rgb": (255, 0, 0),
+                "threshold": 60.0,
+                "matched_color_names": ["bright red", "red"]
+            }
         }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
         self.assertEqual(expected, result)
 
-    @patch("Chatbot.pipelines.color_extractors.simplify_color_description_with_llm")
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_05(self, mock_find_similar, mock_rgb_lookup, mock_simplify):
-        text = "Beige shades look elegant"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["beige"]
-        mock_simplify.return_value = []
+    def test_case_04(self, mock_find_similar, mock_get_rgb):
+        text = "I like both soft pink and warm beige"
+        mock_get_rgb.side_effect = [(255, 182, 193), (245, 245, 220)]
+        mock_find_similar.side_effect = [
+            ["soft pink", "light pink"],
+            ["beige", "warm beige"]
+        ]
+
+        result = extract_color_pipeline(text, self.known_tones, self.known_modifiers)
 
         expected = {
-            "positive": {"tones": ["beige"], "matched_color_names": ["beige"]},
-            "negative": {"tones": [], "matched_color_names": []}
+            "positive": {
+                "base_rgb": (255, 182, 193),
+                "threshold": 60.0,
+                "matched_color_names": ["beige", "light pink", "soft pink", "warm beige"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
         }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
         self.assertEqual(expected, result)
 
-    from Chatbot.scripts.cache import _simplify_cache
-    _simplify_cache.pop("peach", None)
-
-    @patch("Chatbot.pipelines.color_extractors.simplify_color_description_with_llm")
     @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
     @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
-    def test_case_06(self, mock_find_similar, mock_rgb_lookup, mock_simplify):
-        text = "A peach lipstick would be great"
-        mock_rgb_lookup.return_value = (200, 30, 50)
-        mock_find_similar.return_value = ["peach"]
-        mock_simplify.return_value = []
+    def test_case_05(self, mock_find_similar, mock_get_rgb):
+        text = "Please exclude bright red and orange"
+        mock_get_rgb.side_effect = [(255, 0, 0), (255, 165, 0)]
+        mock_find_similar.side_effect = [
+            ["red", "bright red"],
+            ["orange", "neon orange"]
+        ]
+
+        result = extract_color_pipeline(text, self.known_tones, self.known_modifiers)
 
         expected = {
-            "positive": {"tones": [], "matched_color_names": ["peach"]},
-            "negative": {"tones": [], "matched_color_names": []}
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (255, 0, 0),
+                "threshold": 60.0,
+                "matched_color_names": ["bright red", "neon orange", "orange", "red"]
+            }
         }
-
-        result = extract_color_pipeline(
-            text,
-            known_tones=self.known_tones,
-            known_modifiers=self.known_modifiers
-        )
         self.assertEqual(expected, result)
+
 
 if __name__ == "__main__":
     unittest.main()
