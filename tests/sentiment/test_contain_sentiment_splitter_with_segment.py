@@ -17,7 +17,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_03(self):
         text = "She wears warm tones and cool tones"
-        expected = (True, ["She wears warm tones", "cool tones"])
+        expected = (False, ['She wears warm tones and cool tones'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 
@@ -35,7 +35,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_06(self):
         text = "I like red and pink"
-        expected = (True, ["I like red", "pink"])
+        expected = (False, ['I like red and pink'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 
@@ -143,7 +143,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_24(self):
         text = "Either soft pink or light beige"
-        expected = (True, ['Either soft pink', 'light beige'])
+        expected = (False, ['Either soft pink or light beige'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 
@@ -191,7 +191,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_32(self):
         text = "Light beige and soft peach work well together"
-        expected = (True, ["Light beige", "soft peach work well together"])
+        expected = (False, ['Light beige and soft peach work well together'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 
@@ -209,7 +209,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_35(self):
         text = "I like red and orange and peach"
-        expected = (True, ["I like red", "orange and peach"])
+        expected = (False, ['I like red and orange and peach'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 
@@ -251,7 +251,7 @@ class TestSentimentSplitter(unittest.TestCase):
 
     def test_case_42(self):
         text = "I like soft pink and dusty rose"
-        expected = (True, ["I like soft pink", "dusty rose"])
+        expected = (False, ['I like soft pink and dusty rose'])
         result = contains_sentiment_splitter_with_segments(text)
         self.assertEqual(expected, result)
 

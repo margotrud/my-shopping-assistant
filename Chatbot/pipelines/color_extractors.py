@@ -218,5 +218,8 @@ def extract_color_pipeline(
     # True exclusion: if a color is explicitly part of negative → remove it from positive
     cleaned_pos = sorted(list(pos_set - neg_set))
     output["positive"]["matched_color_names"] = cleaned_pos
+    # If nothing remains in positive, clear its base_rgb too
+    if not cleaned_pos:
+        output["positive"]["base_rgb"] = None
 
     return output
