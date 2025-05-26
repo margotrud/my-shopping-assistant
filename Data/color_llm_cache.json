@@ -119,6 +119,36 @@
       200,
       30,
       50
+    ],
+    "dusty rose": [
+      210,
+      150,
+      160
+    ],
+    "pale": [
+      240,
+      230,
+      210
+    ],
+    "deep red": [
+      180,
+      0,
+      0
+    ],
+    "bright red": [
+      220,
+      20,
+      60
+    ],
+    "warm beige": [
+      255,
+      182,
+      193
+    ],
+    "anything orange": [
+      255,
+      165,
+      0
     ]
   },
   "simplified": {
@@ -190,6 +220,24 @@
     ],
     "shimmery bronze": [
       "shimmery bronze"
+    ],
+    "dusty rose": [
+      "muted pink"
+    ],
+    "pale": [
+      "pale beige"
+    ],
+    "deep red": [
+      "deep red"
+    ],
+    "peach": [
+      "soft peach"
+    ],
+    "bright red": [
+      "bright red"
+    ],
+    "warm beige": [
+      "warm beige"
     ]
   }
 }
