@@ -141,7 +141,24 @@ def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list
 
 def is_negated(text: str) -> bool:
     doc = nlp(text)
-    return any(tok.dep_ == "neg" for tok in doc)
+
+    # direct negation (not, never, etc.)
+    if any(tok.dep_ == "neg" for tok in doc):
+        return True
+
+    # fallback: "no" used as determiner in front of a color-related noun/adj
+    for i in range(len(doc) - 1):
+        t1, t2 = doc[i], doc[i + 1]
+        if (
+            t1.text.lower() == "no" and
+            t1.dep_ == "det" and
+            t2.pos_ in {"ADJ", "NOUN"} and
+            t2.dep_ in {"amod", "compound", "conj"}
+        ):
+            return True
+
+    return False
+
 
 def is_softly_negated(text: str) -> bool:
     """
