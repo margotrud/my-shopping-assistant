@@ -250,6 +250,20 @@ def extract_all_descriptive_color_phrases(
         final.append(phrase)
         if debug:
             print(f"[DEBUG] ✅ Final accepted phrase: '{phrase}'")
+    # ➕ Add suffix-based fallback directly to final output
+    for t in tokens:
+        normalized = singularize(t.text.lower())
+        if (
+            t.pos_ == "ADJ"
+            and normalized not in known_modifiers
+            and normalized not in final
+            and normalized not in compound_token_counts
+            and normalized.endswith(("ish", "y"))
+            and normalized not in hardcoded_blocked_nouns
+        ):
+            final.append(normalized)
+            if debug:
+                print(f"[DEBUG] ✅ Added suffix-based tone: '{normalized}'")
 
     if debug:
         print(f"\n[DEBUG] ✨ Final result (before dedup): {final}")

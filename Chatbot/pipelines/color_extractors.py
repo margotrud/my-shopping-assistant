@@ -175,18 +175,35 @@ def build_sentiment_output(
                     if rgb:
                         logger.debug(f"[🎯 LLM RGB RESULT] {phrase} → {rgb}")
                         store_rgb_to_cache(phrase, rgb)
+                    else:
+                        # ✅ NEW: Try suffix-based fallback
+                        if (phrase.endswith("y") or phrase.endswith("ish")) and len(phrase) > 3:
+                            logger.debug(f"[🟠 SUFFIX FALLBACK TRIGGERED] → {phrase}")
+                            for suffix in ["y", "ish"]:
+                                if phrase.endswith(suffix):
+                                    base = phrase[:-len(suffix)]
+                                    logger.debug(f"[🟠 TRYING BASE] '{phrase}' → '{base}'")
+                                    if base in known_tones:
+                                        logger.debug(f"[🟠 BASE IS KNOWN TONE] '{base}' is a valid tone")
+                                        try:
+                                            rgb = get_rgb_from_descriptive_color_llm_first(base)
+                                            if rgb:
+                                                store_rgb_to_cache(phrase, rgb)
+                                                logger.debug(f"[🎯 SUFFIX RGB RESOLVED] {phrase} → {rgb} (via '{base}')")
+                                                break
+                                            else:
+                                                logger.warning(
+                                                    f"[⚠️ SUFFIX RGB RESOLUTION FAILED] '{base}' returned no RGB")
+                                        except Exception as sub_e:
+                                            logger.warning(f"[⚠️ SUFFIX RGB FAIL] '{base}' → {sub_e}")
+                                    else:
+                                        logger.debug(f"[🔁 BASE NOT IN TONES] '{base}' is not in known tones")
+
+                        if not rgb:
+                            logger.warning(f"[⚠️ RGB NOT RESOLVED] {phrase} → Skipped from matched_color_names")
             except Exception as e:
                 logger.warning(f"[⚠️ MAIN RGB ERROR] '{phrase}' → {e}")
-
-            if not rgb:
-                try:
-                    logger.debug(f"[🧯 FINAL FALLBACK ATTEMPT] for → '{phrase}'")
-                    rgb = get_rgb_from_descriptive_color_llm_first(phrase)
-                    if rgb:
-                        store_rgb_to_cache(phrase, rgb)
-                        logger.debug(f"[🧯 FINAL FALLBACK RGB] {phrase} → {rgb}")
-                except Exception as fallback_error:
-                    logger.warning(f"[🧯 FINAL FALLBACK FAILED for {phrase}] → {fallback_error}")
+                rgb = None
 
             if rgb:
                 logger.debug(f"[🎨 RGB FINALIZED] Phrase: {phrase} → {rgb}")
@@ -205,25 +222,37 @@ def build_sentiment_output(
                     all_color_names.add(phrase)
 
                 simplified = simplify_if_needed(phrase)
+                if not simplified:
+                    logger.debug(f"[🪂 FALLBACK TO ORIGINAL] → {phrase}")
+                    simplified = [phrase]
+
                 simplified_phrases.extend(simplified)
 
-                if phrase in known_tones:
+                if phrase in known_tones and phrase not in simplified_phrases:
                     simplified_phrases.append(phrase)
             else:
                 logger.warning(f"[⚠️ RGB NOT RESOLVED] Phrase: {phrase} → Skipped from matched_color_names")
 
-        # ───────────────────────────────────────────────
-        # 🆕 Fallback RGB for missed single NOUNs like "greige"
-        # ───────────────────────────────────────────────
+        # Fallback RGB for missed color-like tokens (NOUN or ADJ)
         doc = nlp(seg.lower())
         for token in doc:
+            candidate = token.text.lower()
+
             if (
-                token.text not in seen_phrases
-                and token.pos_ == "NOUN"
-                and token.is_alpha
-                and len(token.text) <= 20
+                    candidate not in seen_phrases
+                    and token.pos_ in {"NOUN", "ADJ"}
+                    and token.is_alpha
+                    and len(candidate) <= 20
             ):
-                candidate = token.text
+                if token.lemma_ in {"tone", "shade", "color"} and token.pos_ == "NOUN":
+                    logger.debug(f"[🚫 BLOCKED GENERIC NOUN] '{candidate}' → Not a valid color input")
+                    continue
+
+                simplified = simplify_if_needed(candidate)
+                if not simplified:
+                    logger.debug(f"[🚫 SKIPPED NON-COLOR TOKEN] '{candidate}' → not a valid color")
+                    continue
+
                 logger.debug(f"[🆕 FALLBACK RGB CHECK] → {candidate}")
 
                 try:
@@ -246,8 +275,6 @@ def build_sentiment_output(
 
     rep_rgb = next(iter(phrase_rgb_map.values()), None)
 
-    all_color_names = set(all_color_names)  # Final dedup
-
     result = {
         "matched_color_names": sorted(all_color_names),
         "base_rgb": rep_rgb,
@@ -257,6 +284,7 @@ def build_sentiment_output(
     logger.debug(f"[📦 FINAL SENTIMENT OUTPUT] → {sentiment.upper()}")
     logger.debug(json.dumps(result, indent=2))
     return result
+
 
 # VII. PIPELINE ENTRY POINT
 # ──────────────────────────────────────────────────────────
