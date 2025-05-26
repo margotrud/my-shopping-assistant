@@ -660,6 +660,350 @@ class TestExtractColorPipeline(unittest.TestCase):
         }
         self.assertEqual(expected, result)
 
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_26(self, mock_find_similar, mock_get_rgb):
+        text = "I'm not into anything too sparkly"
+        mock_get_rgb.return_value = (250, 250, 210)
+        mock_find_similar.return_value = ["sparkly", "glitter gold"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (250, 250, 210),
+                "threshold": 60.0,
+                "matched_color_names": ["glitter gold", "sparkly"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_27(self, mock_find_similar, mock_get_rgb):
+        text = "I love deep forest green tones"
+        mock_get_rgb.return_value = (34, 139, 34)
+        mock_find_similar.return_value = ["forest green", "deep green"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (34, 139, 34),
+                "threshold": 60.0,
+                "matched_color_names": ["deep green", "forest green"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_28(self, mock_find_similar, mock_get_rgb):
+        text = "Not too into gold or metallic finishes"
+        mock_get_rgb.side_effect = [(255, 215, 0), (192, 192, 192)]
+        mock_find_similar.side_effect = [["gold"], ["metallic", "silver"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (255, 215, 0),
+                "threshold": 60.0,
+                "matched_color_names": ["gold", "metallic", "silver"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_29(self, mock_find_similar, mock_get_rgb):
+        text = "I'd love something between coral and tangerine"
+        mock_get_rgb.side_effect = [(255, 127, 80), (255, 153, 51)]
+        mock_find_similar.side_effect = [["coral", "light orange"], ["tangerine", "orange"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (255, 127, 80),
+                "threshold": 60.0,
+                "matched_color_names": ["coral", "light orange", "orange", "tangerine"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_30(self, mock_find_similar, mock_get_rgb):
+        text = "Stay away from anything like charcoal or ash"
+        mock_get_rgb.side_effect = [(54, 69, 79), (178, 190, 181)]
+        mock_find_similar.side_effect = [["charcoal", "graphite"], ["ash", "cool gray"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (54, 69, 79),
+                "threshold": 60.0,
+                "matched_color_names": ["ash", "charcoal", "cool gray", "graphite"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_31(self, mock_find_similar, mock_get_rgb):
+        text = "Do you have anything in rosy pink?"
+        mock_get_rgb.return_value = (255, 192, 203)
+        mock_find_similar.return_value = ["rosy pink", "blush", "warm pink"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (255, 192, 203),
+                "threshold": 60.0,
+                "matched_color_names": ["blush", "rosy pink", "warm pink"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_32(self, mock_find_similar, mock_get_rgb):
+        text = "No brown, not even chocolate"
+        mock_get_rgb.side_effect = [(139, 69, 19), (123, 63, 0)]
+        mock_find_similar.side_effect = [["brown", "mocha"], ["chocolate", "cocoa"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (139, 69, 19),
+                "threshold": 60.0,
+                "matched_color_names": ["brown", "chocolate", "cocoa", "mocha"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_33(self, mock_find_similar, mock_get_rgb):
+        text = "A touch of light lilac would be lovely"
+        mock_get_rgb.return_value = (200, 162, 200)
+        mock_find_similar.return_value = ["light lilac", "pastel purple", "lavender"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (200, 162, 200),
+                "threshold": 60.0,
+                "matched_color_names": ["lavender", "light lilac", "pastel purple"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_34(self, mock_find_similar, mock_get_rgb):
+        text = "Please no bright blue or neon purple"
+        mock_get_rgb.side_effect = [(0, 0, 255), (148, 0, 211)]
+        mock_find_similar.side_effect = [["bright blue", "electric blue"], ["neon purple", "vivid violet"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (0, 0, 255),
+                "threshold": 60.0,
+                "matched_color_names": ["bright blue", "electric blue", "neon purple", "vivid violet"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_35(self, mock_find_similar, mock_get_rgb):
+        text = "I’m avoiding anything that looks too icy"
+        mock_get_rgb.return_value = (224, 255, 255)
+        mock_find_similar.return_value = ["icy blue", "frosted mint"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (224, 255, 255),
+                "threshold": 60.0,
+                "matched_color_names": ["frosted mint", "icy blue"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_36(self, mock_find_similar, mock_get_rgb):
+        text = "Can I see something creamy peach or soft apricot?"
+        mock_get_rgb.side_effect = [(255, 229, 180), (253, 213, 177)]
+        mock_find_similar.side_effect = [["creamy peach"], ["soft apricot", "pastel peach"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (255, 229, 180),
+                "threshold": 60.0,
+                "matched_color_names": ["creamy peach", "pastel peach", "soft apricot"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_37(self, mock_find_similar, mock_get_rgb):
+        text = "I'd rather not have anything in vibrant teal"
+        mock_get_rgb.return_value = (0, 128, 128)
+        mock_find_similar.return_value = ["teal", "vibrant teal"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (0, 128, 128),
+                "threshold": 60.0,
+                "matched_color_names": ["teal", "vibrant teal"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_38(self, mock_find_similar, mock_get_rgb):
+        text = "Could I get something soft bronze?"
+        mock_get_rgb.return_value = (205, 127, 50)
+        mock_find_similar.return_value = ["bronze", "soft bronze"]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (205, 127, 50),
+                "threshold": 60.0,
+                "matched_color_names": ["bronze", "soft bronze"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_39(self, mock_find_similar, mock_get_rgb):
+        text = "Please exclude warm taupe or dusty mocha"
+        mock_get_rgb.side_effect = [(72, 60, 50), (111, 78, 55)]
+        mock_find_similar.side_effect = [["taupe", "warm taupe"], ["mocha", "dusty mocha"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            },
+            "negative": {
+                "base_rgb": (72, 60, 50),
+                "threshold": 60.0,
+                "matched_color_names": ["dusty mocha", "mocha", "taupe", "warm taupe"]
+            }
+        }
+        self.assertEqual(expected, result)
+
+    @patch("Chatbot.pipelines.color_extractors.get_rgb_from_descriptive_color_llm_first")
+    @patch("Chatbot.pipelines.color_extractors.find_similar_color_names")
+    def test_case_40(self, mock_find_similar, mock_get_rgb):
+        text = "I want something between rosewood and cranberry"
+        mock_get_rgb.side_effect = [(101, 67, 76), (220, 20, 60)]
+        mock_find_similar.side_effect = [["rosewood"], ["cranberry", "deep red"]]
+
+        result = color_extractors.extract_color_pipeline(text, self.known_tones, self.known_modifiers)
+
+        expected = {
+            "positive": {
+                "base_rgb": (101, 67, 76),
+                "threshold": 60.0,
+                "matched_color_names": ["cranberry", "deep red", "rosewood"]
+            },
+            "negative": {
+                "base_rgb": None,
+                "threshold": 60.0,
+                "matched_color_names": []
+            }
+        }
+        self.assertEqual(expected, result)
 
 
 if __name__ == "__main__":

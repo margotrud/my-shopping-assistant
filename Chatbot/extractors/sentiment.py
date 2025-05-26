@@ -146,14 +146,14 @@ def is_negated(text: str) -> bool:
     if any(tok.dep_ == "neg" for tok in doc):
         return True
 
-    # fallback: "no" used as determiner in front of a color-related noun/adj
+    # check for cases like "no brown", "no coral"
     for i in range(len(doc) - 1):
         t1, t2 = doc[i], doc[i + 1]
         if (
-            t1.text.lower() == "no" and
-            t1.dep_ == "det" and
-            t2.pos_ in {"ADJ", "NOUN"} and
-            t2.dep_ in {"amod", "compound", "conj"}
+            t1.text.lower() == "no"
+            and t1.dep_ in {"det", "neg"}
+            and t2.pos_ in {"ADJ", "NOUN"}
+            and t2.dep_ in {"amod", "compound", "conj", "ROOT"}
         ):
             return True
 
