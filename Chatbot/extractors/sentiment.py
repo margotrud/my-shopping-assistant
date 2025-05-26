@@ -120,12 +120,12 @@ def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list
 
     def map_sentiment(predicted: str, text: str) -> str:
         if predicted == "neutral":
-            if is_negated(text) or text.strip().lower().startswith("no "):
+            if is_negated(text) or is_softly_negated(text):
                 print(f"[🧠 FALLBACK NEGATION DETECTED] '{text}' → forcing 'negative'")
                 return "negative"
             else:
                 return "positive"
-        return predicted  # ✅ this line fixes your failure
+        return predicted
 
     for seg in segments:
         try:
@@ -142,3 +142,24 @@ def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list
 def is_negated(text: str) -> bool:
     doc = nlp(text)
     return any(tok.dep_ == "neg" for tok in doc)
+
+def is_softly_negated(text: str) -> bool:
+    """
+    Detects soft negation like 'not too shiny', 'nothing too bold', etc.
+
+    Returns True if pattern matches: [negation] + 'too' + ADJ
+    """
+    doc = nlp(text.lower())
+
+    for i in range(len(doc) - 2):
+        t1, t2, t3 = doc[i], doc[i + 1], doc[i + 2]
+
+        if (
+            t1.dep_ in {"neg", "dobj"} and
+            t1.pos_ in {"PRON", "ADV", "DET"} and
+            t2.text.lower() == "too" and
+            t3.pos_ == "ADJ"
+        ):
+            return True
+
+    return False
