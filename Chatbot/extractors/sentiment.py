@@ -46,6 +46,14 @@ nlp = spacy.load("en_core_web_sm")
 
 def contains_sentiment_splitter_with_segments(text: str):
     doc = nlp(text)
+
+    # 🚫 Early block: if negation + "or" + no punctuation, avoid segmenting
+    has_negation = any(tok.dep_ == "neg" for tok in doc)
+    has_or = any(tok.text.lower() == "or" for tok in doc)
+    has_punct = any(tok.text in {".", ",", ";"} for tok in doc)
+    if has_negation and has_or and not has_punct:
+        return False, [text.strip()]
+
     splitter_index = None
 
     for i, token in enumerate(doc):
@@ -56,7 +64,7 @@ def contains_sentiment_splitter_with_segments(text: str):
 
             if prev and next_:
                 if prev.pos_ in {"ADJ", "NOUN"} and next_.pos_ in {"ADJ", "NOUN"}:
-                    continue  # "and" connecting two tones/modifiers — do not split
+                    continue  # "and"/"or" connecting two tones/modifiers — do not split
 
         # Case 2: clause-level conjunctions or markers
         if token.dep_ in {"cc", "mark", "discourse"}:
@@ -98,13 +106,12 @@ def contains_sentiment_splitter_with_segments(text: str):
         second_segment = doc[splitter_index + 1:].text.strip()
         return True, [first_segment, second_segment]
 
-    # Step 3: fallback — punctuation-based segmentation
+    # Fallback: punctuation-based segmentation
     if any(punct in text for punct in [".", ";", ","]):
         segments = [seg.strip() for seg in re.split(r"[.;,]", text) if seg.strip()]
         if len(segments) >= 2:
             return True, segments
 
-    # No splitter found — return whole sentence as one segment
     return False, [text.strip()]
 
 ############################## III. Double sentiment detection
