@@ -3,10 +3,11 @@
   "natural", "shimmery", "glossy", "dewy", "luminous", "matte", "satin", "creamy", "powdery",
   "subtle", "intense", "neutral", "warm", "cool", "rosy", "golden", "olive", "peachy",
   "yellow", "ivory", "pinkish", "reddish", "bluish", "brownish", "fair", "light", "medium",
-  "tan", "deep", "dark", "very light", "very fair", "very deep", "very dark", "ultra light",
+  "tan", "dark", "very light", "very fair", "very deep", "very dark", "ultra light",
   "ultra deep", "medium-deep", "medium-light", "medium-dark", "cool-neutral", "warm-neutral",
   "radiant", "bare", "pearly", "metallic","bronzed", "rosé", "ashy", "dusty", "cool-toned", "warm-toned", "neutral-toned", "barely-there",
-  "rich-toned", "bold-toned", "soft-focus", "neutral-cool", "neutral-warm", "pinky", "gold-flecked", "silky", "nude", "shiny"
+  "rich-toned", "bold-toned", "soft-focus", "neutral-cool", "neutral-warm", "pinky", "gold-flecked",
+  "silky", "nude", "shiny", "flashy", "glitter", "shimmer", "neon", "electric", "seafoam", "pearl", "off", "icy"
 ]
 
 

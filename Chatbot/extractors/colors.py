@@ -35,11 +35,23 @@ def extract_all_descriptive_color_phrases(
     Extracts descriptive color phrases with detailed code-level debugging.
     """
     from collections import Counter
+    known_modifiers = {mod.lower() for mod in known_modifiers}
+    if debug:
+        print("[DEBUG] Modifier vocab sample →", sorted(list(known_modifiers))[:20])
+        print("[DEBUG] 'flashy' in modifiers? →", "flashy" in known_modifiers)
+
+    known_tones = {tone.lower() for tone in known_tones}
 
     def singularize(word: str) -> str:
         return word[:-1] if word.endswith("s") and not word.endswith("ss") else word
 
     doc = nlp(text.lower())
+    if debug:
+        print(f"\n[DEBUG] Raw input: '{text}'")
+        print(f"[DEBUG] Token list:")
+        for i, t in enumerate(doc):
+            print(f"  - Index {i:02d} → '{t.text}' | POS={t.pos_} | DEP={t.dep_} | HEAD={t.head.text}")
+
     tokens = list(doc)
     token_texts = [t.text for t in tokens]
     token_counts = Counter(token_texts)
@@ -59,16 +71,18 @@ def extract_all_descriptive_color_phrases(
 
     for i in range(len(tokens) - 1):
         t1, t2 = tokens[i], tokens[i + 1]
+        t1_text = t1.text.lower()
+        t2_text = singularize(t2.text.lower())
 
-        t1_is_valid = t1.text in known_modifiers
-        t2_is_valid = singularize(t2.text) in known_tones
+        t1_is_valid = t1_text in known_modifiers
+        t2_is_valid = t2_text in known_tones or t2_text in all_webcolor_names
 
         if debug:
-            print(f"\n[DEBUG] Checking pair: '{t1.text}' + '{t2.text}'")
+            print(f"\n[DEBUG] Checking pair: '{t1_text}' + '{t2_text}'")
             print(
-                f"  → t1 = {t1.text}, is_modifier = {t1_is_valid}, is_tone/webcolor = {t1.text in known_tones or t1.text in all_webcolor_names}")
+                f"  → t1 = {t1_text}, is_modifier = {t1_is_valid}, is_tone/webcolor = {t1_text in known_tones or t1_text in all_webcolor_names}")
             print(
-                f"  → t2 = {t2.text}, is_tone = {t2.text in known_tones}, is_webcolor = {t2.text in all_webcolor_names}, POS = {t2.pos_}")
+                f"  → t2 = {t2_text}, is_tone = {t2_text in known_tones}, is_webcolor = {t2_text in all_webcolor_names}, POS = {t2.pos_}")
 
         if not (t1_is_valid and t2_is_valid):
             if debug:
@@ -124,7 +138,7 @@ def extract_all_descriptive_color_phrases(
 
     # Collect standalone tone/modifier tokens if not only used in compounds
     for i, t in enumerate(tokens):
-        token_text = t.text
+        token_text = t.text.lower()
         normalized = singularize(token_text)
 
         if (token_text in known_modifiers or normalized in known_tones) and normalized not in hardcoded_blocked_nouns:
@@ -142,8 +156,23 @@ def extract_all_descriptive_color_phrases(
                 if debug:
                     print(f"[DEBUG] ⛔ Skipped single '{token_text}' — only appears in compounds")
 
+
     # Filter singles
     filtered_singles = []
+    # ✅ EXTRA STANDALONE: pick up lone NOUN tones like 'greige', 'bronze', etc.
+    for t in tokens:
+        normalized = singularize(t.text.lower())
+        if (
+            normalized in known_tones
+            and t.pos_ == "NOUN"
+            and normalized not in compound_token_counts
+            and normalized not in hardcoded_blocked_nouns
+            and normalized not in filtered_singles
+        ):
+            filtered_singles.append(normalized)
+            if debug:
+                print(f"[DEBUG] ✅ Added standalone NOUN tone: '{normalized}'")
+
     for word in singles:
         count = token_counts[word]
         compound_uses = compound_token_to_phrases.get(word, set())
@@ -201,20 +230,22 @@ def extract_all_descriptive_color_phrases(
 
     for phrase in candidates:
         parts = phrase.split()
-        phrase_contains_noun = any(
-            any(
-                tok.text == part and
-                tok.pos_ == "NOUN" and
-                singularize(part) not in known_modifiers and
-                singularize(part) not in known_tones
-                for tok in tokens
-            )
-            for part in parts
-        )
-        if phrase_contains_noun:
-            if debug:
-                print(f"[DEBUG] 🚫 Removed '{phrase}' — Contains NOUN not in vocab")
+        phrase_contains_bad_noun = False
+        for tok in tokens:
+            tok_text = tok.text.lower()
+            if tok_text in parts and tok.pos_ == "NOUN":
+                if singularize(tok_text) not in known_modifiers and singularize(
+                        tok_text) not in known_tones and tok_text not in all_webcolor_names:
+                    phrase_contains_bad_noun = True
+                    if debug:
+                        print(
+                            f"[DEBUG] 🚫 Removed '{phrase}' — noun '{tok_text}' not in known tones/modifiers/webcolors")
+                    break
+        if phrase_contains_bad_noun:
             continue
+        final.append(phrase)
+        if debug:
+            print(f"[DEBUG] ✅ Final accepted phrase: '{phrase}'")
 
         final.append(phrase)
         if debug:

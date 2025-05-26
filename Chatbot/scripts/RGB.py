@@ -1,3 +1,5 @@
+# Chatbot/scripts/RGB.py
+
 import webcolors
 from thefuzz import process
 from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
@@ -73,51 +75,62 @@ def get_rgb_from_descriptive_color_llm_first(input_color: str) -> Optional[Tuple
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     print(f"[🎨 INPUT COLOR] → '{input_color}'")
 
-    # Step 1 → Try LLM RGB prediction directly
-    rgb_llm = query_llm_for_rgb(input_color)
-    if rgb_llm:
-        return rgb_llm
+    # STEP 1 — Try raw RGB prediction from LLM
+    try:
+        rgb_llm = query_llm_for_rgb(input_color)
+        if rgb_llm:
+            print(f"[✅ DIRECT LLM RGB] → {rgb_llm}")
+            return rgb_llm
+        else:
+            print("[⚠️ LLM RGB failed] → Returned None")
+    except Exception as e:
+        print(f"[❌ LLM RGB EXCEPTION] → {e}")
 
-    # Step 2 → Fallback to simplification + fuzzy matching
+    # STEP 2 — Simplify descriptive term
     simplified_list = simplify_color_description_with_llm(input_color)
     if not simplified_list:
-        print("[❌ LLM Simplification] → No valid simplified result")
+        print("[❌ SIMPLIFICATION FAILED] → No usable simplified form")
         return None
 
     simplified = simplified_list[0]
-    print(f"[✅ LLM SIMPLIFIED] → '{simplified}'")
+    print(f"[✅ SIMPLIFIED TERM] → '{simplified}'")
 
-    # 3. Try exact match in xkcd
+    # STEP 3 — Exact match in XKCD
     for name, hex_code in XKCD_COLORS.items():
-        if simplified == name.replace("xkcd:", ""):
+        clean_name = name.replace("xkcd:", "").lower()
+        if simplified.lower() == clean_name:
             rgb = webcolors.hex_to_rgb(hex_code)
-            print(f"[🎯 XKCD EXACT MATCH] → '{name}' = {rgb}")
+            print(f"[🎯 XKCD EXACT MATCH] → '{clean_name}' = {rgb}")
             return rgb
+    print(f"[⚠️ NO XKCD EXACT MATCH] for '{simplified}'")
 
-    # 4. Exact match in CSS4
+    # STEP 4 — Exact match in CSS4
     if simplified in CSS4_COLORS:
         rgb = webcolors.hex_to_rgb(CSS4_COLORS[simplified])
         print(f"[🎯 CSS4 EXACT MATCH] → '{simplified}' = {rgb}")
         return rgb
+    print(f"[⚠️ NO CSS4 EXACT MATCH] for '{simplified}'")
 
-    # 5. Fuzzy match: XKCD
+    # STEP 5 — Fuzzy match in XKCD
     xkcd_names = [name.replace("xkcd:", "") for name in XKCD_COLORS]
     best_match_xkcd, score_xkcd = process.extractOne(simplified, xkcd_names)
     if score_xkcd >= 80:
         hex_code = XKCD_COLORS[f"xkcd:{best_match_xkcd}"]
         rgb = webcolors.hex_to_rgb(hex_code)
-        print(f"[🔍 FUZZY MATCH - XKCD] → '{best_match_xkcd}' (score={score_xkcd}) = {rgb}")
+        print(f"[🔍 FUZZY MATCH - XKCD] '{best_match_xkcd}' (score={score_xkcd}) = {rgb}")
         return rgb
+    print(f"[⚠️ FUZZY XKCD FAILED] → '{simplified}' best='{best_match_xkcd}' (score={score_xkcd})")
 
-    # 6. Fuzzy match: CSS4
+    # STEP 6 — Fuzzy match in CSS4
     css_names = list(CSS4_COLORS.keys())
     best_match_css, score_css = process.extractOne(simplified, css_names)
     if score_css >= 80:
         rgb = webcolors.hex_to_rgb(CSS4_COLORS[best_match_css])
-        print(f"[🔍 FUZZY MATCH - CSS4] → '{best_match_css}' (score={score_css}) = {rgb}")
+        print(f"[🔍 FUZZY MATCH - CSS4] '{best_match_css}' (score={score_css}) = {rgb}")
         return rgb
+    print(f"[❌ NO FUZZY CSS4 MATCH] → best='{best_match_css}' (score={score_css})")
 
-    print("[❌ NO MATCH FOUND]")
+    print("[🛑 FINAL FAILURE] → No RGB match found")
     return None
 
 

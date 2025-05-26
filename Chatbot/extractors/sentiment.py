@@ -108,7 +108,6 @@ def contains_sentiment_splitter_with_segments(text: str):
     return False, [text.strip()]
 
 ############################## III. Double sentiment detection
-
 def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list[str]) -> dict[str, list[str]]:
     """
     Classify each independent segment into positive or negative categories using detect_sentiment().
@@ -120,18 +119,25 @@ def classify_segments_by_sentiment_no_neutral(has_splitter: bool, segments: list
     }
 
     def map_sentiment(predicted: str, text: str) -> str:
-        # Dynamically detect negation if model returned "neutral"
-        if predicted == "neutral" and is_negated(text):
-            print(f"[🧠 NEGATION DETECTED] '{text}' → forcing 'negative'")
-            return "negative"
-        return predicted
+        if predicted == "neutral":
+            if is_negated(text) or text.strip().lower().startswith("no "):
+                print(f"[🧠 FALLBACK NEGATION DETECTED] '{text}' → forcing 'negative'")
+                return "negative"
+            else:
+                return "positive"
+        return predicted  # ✅ this line fixes your failure
 
     for seg in segments:
-        sentiment = detect_sentiment(seg)
-        mapped = map_sentiment(sentiment, seg)
-        classification[mapped].append(seg)
+        try:
+            sentiment = detect_sentiment(seg)
+            mapped = map_sentiment(sentiment, seg)
+            classification[mapped].append(seg)
+        except Exception as e:
+            print(f"[❌ SENTIMENT ERROR] → {e}")
 
     return classification
+
+
 
 def is_negated(text: str) -> bool:
     doc = nlp(text)
