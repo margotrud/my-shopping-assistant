@@ -249,10 +249,35 @@ def build_sentiment_output(
                 if candidate in known_modifiers or candidate in known_tones:
                     logger.debug(f"[🧠 FALLBACK ALLOWED] '{candidate}' in known vocab")
                 else:
-                    simplified = simplify_if_needed(candidate)
-                    if not simplified:
-                        logger.debug(f"[🚫 SKIPPED NON-COLOR TOKEN] '{candidate}' → not a valid color")
-                        continue
+                    # Only proceed if known vocab or LLM confirms it's a color
+                    if candidate in known_modifiers or candidate in known_tones:
+                        logger.debug(f"[🧠 FALLBACK ALLOWED] '{candidate}' in known vocab")
+                    else:
+                        # 🚫 Block container/category nouns like 'tones', 'shades', 'colors'
+                        if token.lemma_ in {"tone", "tones", "shade", "shades", "color",
+                                            "colors"} and token.pos_ == "NOUN":
+                            logger.debug(f"[🚫 BLOCKED GENERIC NOUN] '{candidate}' → Skipped as container noun")
+                            continue
+
+                        simplified = simplify_if_needed(candidate)
+                        if not simplified:
+                            logger.debug(f"[⚠️ LLM SIMPLIFICATION FAILED] '{candidate}'")
+
+                            # ✅ Fallback: suffix-based color heuristic
+                            if candidate.endswith(("y", "ish")):
+                                for suffix in ["y", "ish"]:
+                                    if candidate.endswith(suffix):
+                                        base = candidate[:-len(suffix)]
+                                        if base in known_tones:
+                                            logger.debug(f"[🧠 SUFFIX COLOR FALLBACK] '{candidate}' → base='{base}'")
+                                            candidate = base  # override candidate with valid tone base
+                                            break
+                                else:
+                                    logger.debug(f"[🚫 SUFFIX STRIPPED BASE NOT A VALID TONE] '{candidate}' → Skipping")
+                                    continue
+                            else:
+                                logger.debug(f"[🚫 SKIPPED NON-COLOR TOKEN] '{candidate}' → Not a suffix-based color")
+                                continue
 
                 logger.debug(f"[🆕 FALLBACK RGB CHECK] → {candidate}")
 
@@ -262,12 +287,15 @@ def build_sentiment_output(
                         store_rgb_to_cache(candidate, fallback_rgb)
                         logger.debug(f"[🎯 FALLBACK RGB RESULT] {candidate} → {fallback_rgb}")
 
+                        phrase_rgb_map[candidate] = fallback_rgb  # ✅ <=== insert here
+
                         matches = get_similar_colors(fallback_rgb, rgb_map)
                         if matches:
                             logger.debug(f"[✅ ADDED VIA FALLBACK] {candidate} → {matches}")
                             all_color_names.update(matches)
                         else:
                             logger.debug(f"[⚠️ NO NEARBY COLORS] → {candidate} (will skip)")
+
                 except Exception as e:
                     logger.warning(f"[❌ FALLBACK FAILED for {candidate}] → {e}")
 
