@@ -262,6 +262,28 @@ def build_sentiment_output(
                         simplified = simplify_if_needed(candidate)
                         if not simplified:
                             logger.debug(f"[⚠️ LLM SIMPLIFICATION FAILED] '{candidate}'")
+                            # ✅ Try to split glued tone tokens (e.g., 'greige' → ['grey', 'beige'])
+                            from Chatbot.scripts.helpers import \
+                                split_glued_tokens  # <- make sure this is at the top of the file
+
+                            subtones = split_glued_tokens(candidate, known_tones)
+                            if subtones:
+                                logger.debug(f"[🧩 SPLIT COLOR TOKEN] '{candidate}' → {subtones}")
+                                for sub in subtones:
+                                    try:
+                                        rgb = get_rgb_from_descriptive_color_llm_first(sub)
+                                        if rgb:
+                                            store_rgb_to_cache(sub, rgb)
+                                            phrase_rgb_map[sub] = rgb
+                                            matches = get_similar_colors(rgb, rgb_map)
+                                            if matches:
+                                                logger.debug(f"[✅ ADDED VIA TOKEN SPLIT] {sub} → {matches}")
+                                                all_color_names.update(matches)
+                                            else:
+                                                logger.debug(f"[⚠️ NO NEARBY COLORS FOR] '{sub}'")
+                                    except Exception as e:
+                                        logger.warning(f"[❌ SPLIT RGB ERROR] '{sub}' → {e}")
+                                continue  # ✅ Skip remaining fallback logic since we handled it
 
                             # ✅ Fallback: suffix-based color heuristic
                             if candidate.endswith(("y", "ish")):
