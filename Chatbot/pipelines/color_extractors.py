@@ -244,14 +244,15 @@ def build_sentiment_output(
                     and token.is_alpha
                     and len(candidate) <= 20
             ):
-                if token.lemma_ in {"tone", "shade", "color"} and token.pos_ == "NOUN":
-                    logger.debug(f"[🚫 BLOCKED GENERIC NOUN] '{candidate}' → Not a valid color input")
-                    continue
 
-                simplified = simplify_if_needed(candidate)
-                if not simplified:
-                    logger.debug(f"[🚫 SKIPPED NON-COLOR TOKEN] '{candidate}' → not a valid color")
-                    continue
+                # Only proceed if known vocab or LLM confirms it's a color
+                if candidate in known_modifiers or candidate in known_tones:
+                    logger.debug(f"[🧠 FALLBACK ALLOWED] '{candidate}' in known vocab")
+                else:
+                    simplified = simplify_if_needed(candidate)
+                    if not simplified:
+                        logger.debug(f"[🚫 SKIPPED NON-COLOR TOKEN] '{candidate}' → not a valid color")
+                        continue
 
                 logger.debug(f"[🆕 FALLBACK RGB CHECK] → {candidate}")
 

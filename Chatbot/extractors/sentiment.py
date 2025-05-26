@@ -168,19 +168,14 @@ def is_negated(text: str) -> bool:
 
 
 def is_softly_negated(text: str) -> bool:
-    """
-    Detects soft negation like 'not too shiny', 'nothing too bold', etc.
-
-    Returns True if pattern matches: [negation] + 'too' + ADJ
-    """
     doc = nlp(text.lower())
 
     for i in range(len(doc) - 2):
         t1, t2, t3 = doc[i], doc[i + 1], doc[i + 2]
 
+        # expanded check for soft negation structures like 'nothing too metallic'
         if (
-            t1.dep_ in {"neg", "dobj"} and
-            t1.pos_ in {"PRON", "ADV", "DET"} and
+            t1.text.lower() in {"nothing", "not", "no"} and
             t2.text.lower() == "too" and
             t3.pos_ == "ADJ"
         ):

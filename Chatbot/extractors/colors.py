@@ -258,9 +258,19 @@ def extract_all_descriptive_color_phrases(
             and normalized not in known_modifiers
             and normalized not in final
             and normalized not in compound_token_counts
-            and normalized.endswith(("ish", "y"))
-            and normalized not in hardcoded_blocked_nouns
+            and (
+                normalized.endswith(("ish", "y")) and
+                (normalized in known_tones or normalized in all_webcolor_names)
+        )
+
+                and normalized not in hardcoded_blocked_nouns
         ):
+            # Reject generic adjectives like "okay"
+            if normalized not in known_tones and normalized not in all_webcolor_names:
+                if debug:
+                    print(f"[🚫 BLOCKED SUFFIX-TONE] '{normalized}' → Not in tone or webcolors")
+                continue
+
             final.append(normalized)
             if debug:
                 print(f"[DEBUG] ✅ Added suffix-based tone: '{normalized}'")
