@@ -1,4 +1,6 @@
 # Chatbot/pipelines/color_extractors.py
+import spacy
+nlp = spacy.load("en_core_web_sm")
 
 import logging
 import webcolors
@@ -155,14 +157,14 @@ def build_sentiment_output(
             logger.warning(f"[⚠️ SEGMENT FAIL] '{seg}' → {e}")
             continue
 
+        seen_phrases = set(phrases)
+
         for phrase in phrases:
             logger.debug(f"[🔍 PHRASE FROM EXTRACTOR] → {phrase}")
-            logger.debug(f"[⚙️ PHRASE] → {phrase}")
             logger.debug(f"[📌 DEBUG PHRASE PASSTHROUGH] → '{phrase}' (segment: '{seg}')")
 
             rgb = None
             try:
-                logger.debug(f"[🔍 RGB LOOKUP REQUEST] for → '{phrase}'")
                 cached = get_cached_rgb(phrase)
                 if cached:
                     rgb = cached
@@ -170,14 +172,12 @@ def build_sentiment_output(
                 else:
                     logger.debug(f"[🚀 LLM RGB CALL] for → '{phrase}'")
                     rgb = get_rgb_from_descriptive_color_llm_first(phrase)
-                    logger.debug(f"[🎯 LLM RGB RESULT] {phrase} → {rgb}")
                     if rgb:
+                        logger.debug(f"[🎯 LLM RGB RESULT] {phrase} → {rgb}")
                         store_rgb_to_cache(phrase, rgb)
-
             except Exception as e:
                 logger.warning(f"[⚠️ MAIN RGB ERROR] '{phrase}' → {e}")
 
-            # Fallback LLM call if the first failed
             if not rgb:
                 try:
                     logger.debug(f"[🧯 FINAL FALLBACK ATTEMPT] for → '{phrase}'")
@@ -192,11 +192,9 @@ def build_sentiment_output(
                 logger.debug(f"[🎨 RGB FINALIZED] Phrase: {phrase} → {rgb}")
                 phrase_rgb_map[phrase] = rgb
 
-                # ✅ Safe against StopIteration (mock exhausted in test)
                 try:
                     matches = get_similar_colors(rgb, rgb_map)
                     logger.debug(f"[🎯 MATCHES FOR {phrase}] RGB: {rgb} → {matches}")
-
                     if matches:
                         all_color_names.update(matches)
                     else:
@@ -214,10 +212,41 @@ def build_sentiment_output(
             else:
                 logger.warning(f"[⚠️ RGB NOT RESOLVED] Phrase: {phrase} → Skipped from matched_color_names")
 
+        # ───────────────────────────────────────────────
+        # 🆕 Fallback RGB for missed single NOUNs like "greige"
+        # ───────────────────────────────────────────────
+        doc = nlp(seg.lower())
+        for token in doc:
+            if (
+                token.text not in seen_phrases
+                and token.pos_ == "NOUN"
+                and token.is_alpha
+                and len(token.text) <= 20
+            ):
+                candidate = token.text
+                logger.debug(f"[🆕 FALLBACK RGB CHECK] → {candidate}")
+
+                try:
+                    fallback_rgb = get_rgb_from_descriptive_color_llm_first(candidate)
+                    if fallback_rgb:
+                        store_rgb_to_cache(candidate, fallback_rgb)
+                        logger.debug(f"[🎯 FALLBACK RGB RESULT] {candidate} → {fallback_rgb}")
+
+                        matches = get_similar_colors(fallback_rgb, rgb_map)
+                        if matches:
+                            logger.debug(f"[✅ ADDED VIA FALLBACK] {candidate} → {matches}")
+                            all_color_names.update(matches)
+                        else:
+                            logger.debug(f"[⚠️ NO NEARBY COLORS] → {candidate} (will skip)")
+                except Exception as e:
+                    logger.warning(f"[❌ FALLBACK FAILED for {candidate}] → {e}")
+
     logger.debug(f"[🧹 SIMPLIFIED PHRASES] → {simplified_phrases}")
     categories = clean_and_categorize(simplified_phrases, known_modifiers, known_tones)
 
     rep_rgb = next(iter(phrase_rgb_map.values()), None)
+
+    all_color_names = set(all_color_names)  # Final dedup
 
     result = {
         "matched_color_names": sorted(all_color_names),
@@ -229,7 +258,6 @@ def build_sentiment_output(
     logger.debug(json.dumps(result, indent=2))
     return result
 
-# ──────────────────────────────────────────────────────────
 # VII. PIPELINE ENTRY POINT
 # ──────────────────────────────────────────────────────────
 def extract_color_pipeline(
