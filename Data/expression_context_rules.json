@@ -1,0 +1,10 @@
+{
+  "soft glam": {
+    "require_tokens": ["glam"],
+    "context_clues": ["natural", "romantic", "refined", "soft"]
+  },
+  "evening": {
+    "require_tokens": ["glam"],
+    "context_clues": ["night", "dark", "deep", "dramatic"]
+  }
+}

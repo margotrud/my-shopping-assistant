@@ -224,7 +224,7 @@ def process_segment_colors(
     phrase_rgb_map = {}
 
     # Extract descriptive color phrases from the segment
-    phrases = extract_phrases_from_segment(segment, known_tones, known_modifiers)
+    phrases = extract_phrases_from_segment(segment, known_modifiers)
     seen_phrases = set(phrases)
 
     for phrase in phrases:

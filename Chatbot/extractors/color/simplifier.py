@@ -20,6 +20,8 @@ from typing import List
 
 from matplotlib.colors import XKCD_COLORS
 
+from dotenv import load_dotenv
+load_dotenv()
 
 def get_cached_simplified(phrase: str) -> List[str]:
     """

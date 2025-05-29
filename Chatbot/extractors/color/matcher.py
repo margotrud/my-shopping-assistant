@@ -15,7 +15,8 @@ import json
 from typing import Set, Optional
 from rapidfuzz import process, fuzz
 
-
+from rapidfuzz import fuzz
+from typing import Dict, List
 def load_known_modifiers() -> Set[str]:
     """
     Loads the known modifier vocabulary from 'Data/known_modifiers.json'.
@@ -64,3 +65,30 @@ def fuzzy_match_modifier(
 
     match = process.extractOne(modifier.lower(), known_modifiers, scorer=fuzz.ratio)
     return match[0] if match and match[1] >= threshold else None
+
+def match_multiword_expressions(text: str, expression_map: Dict[str, List[str]], threshold: int = 85) -> List[str]:
+    """
+    Checks for approximate matches of multi-word expression triggers in the full text.
+
+    Args:
+        text (str): The user input text (e.g., "light glam, soft finish").
+        expression_map (Dict[str, List[str]]): Mapping of expression → list of trigger phrases.
+        threshold (int): Fuzzy match threshold (0-100).
+
+    Returns:
+        List[str]: List of expression categories matched (e.g., ["soft glam"]).
+    """
+    matched = set()
+    lowered_text = text.lower()
+
+    for expression, triggers in expression_map.items():
+        for trigger in triggers:
+            if " " in trigger:
+                score = fuzz.token_sort_ratio(trigger.lower(), lowered_text)
+                if score >= threshold:
+                    matched.add(expression)
+                    break  # One trigger is enough to match the expression
+
+    return list(matched)
+
+

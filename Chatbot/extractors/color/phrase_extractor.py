@@ -89,10 +89,10 @@ def extract_all_descriptive_color_phrases(
     tokens = list(doc)
     token_texts = [t.text for t in tokens]
     token_counts = Counter(token_texts)
-    hardcoded_blocked_nouns = {"lipstick"}  # Example noun to exclude
+    hardcoded_blocked_nouns = {"lipstick", "blush"}  # Example noun to exclude
 
     compounds, raw_compounds = _extract_compounds(tokens, known_tones, known_modifiers, all_webcolor_names, debug)
-    singles = _extract_standalone_tokens(tokens, token_counts, compounds, raw_compounds, known_tones, known_modifiers, hardcoded_blocked_nouns, debug)
+    singles = _extract_standalone_tokens(tokens, token_counts, compounds, raw_compounds, known_tones, known_modifiers, hardcoded_blocked_nouns, debug=True)
     lone_tones = _extract_lone_tones(tokens, raw_compounds, known_tones, hardcoded_blocked_nouns, debug)
     suffix_tokens = _extract_suffix_fallback_tokens(tokens, known_tones, known_modifiers, all_webcolor_names, debug)
 
@@ -157,19 +157,6 @@ def _extract_standalone_tokens(
     """
     Extract standalone tokens which are valid tones or modifiers
     not fully absorbed by compound phrases.
-
-    Args:
-        tokens: List of spaCy tokens.
-        token_counts: Counter of all token texts.
-        compounds: Set of detected compound phrases.
-        raw_compounds: List of raw compound phrases.
-        known_tones: Valid base tones.
-        known_modifiers: Valid modifiers.
-        hardcoded_blocked_nouns: Nouns to exclude.
-        debug: Enable debug output.
-
-    Returns:
-        List of standalone tone/modifier tokens.
     """
     singles = []
     compound_token_counts = Counter(tok for phrase in raw_compounds for tok in phrase.split())
@@ -177,14 +164,38 @@ def _extract_standalone_tokens(
     for t in tokens:
         text = t.text.lower()
         norm = singularize(text)
+        compound_uses = compound_token_counts[text]
+        total_uses = token_counts[text]
+
+        if debug:
+            print(f"\n[🔍 TOKEN CHECK] → '{text}' | POS={t.pos_} | norm={norm}")
+            print(f"    → in_known_modifiers: {text in known_modifiers}")
+            print(f"    → in_known_tones: {norm in known_tones}")
+            print(f"    → in_all_webcolor_names: {norm in all_webcolor_names}")
+            print(f"    → POS: {t.pos_}")
+            print(f"    → total uses: {total_uses} | in compounds: {compound_uses}")
+
         if (text in known_modifiers or norm in known_tones) and norm not in hardcoded_blocked_nouns:
-            if token_counts[text] > compound_token_counts[text]:
+
+            # 🛑 Reject known tone if used as a noun and not a known CSS3 color
+            if (
+                norm in known_tones and
+                t.pos_ == "NOUN" and
+                norm not in all_webcolor_names
+            ):
+                if debug:
+                    print(f"[⛔ REJECTED] → '{text}' (noun, not in webcolors)")
+                continue
+
+            if total_uses > compound_uses:
                 singles.append(text)
                 if debug:
-                    print(f"Standalone token added: {text}")
+                    print(f"[✅ ADDED SINGLE] → '{text}'")
+            else:
+                if debug:
+                    print(f"[⛔ SKIPPED] → '{text}' only appears in compounds")
 
     return singles
-
 
 def _extract_lone_tones(
     tokens: List[spacy.tokens.Token],

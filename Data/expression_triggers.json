@@ -1,0 +1,39 @@
+{
+  "natural": [
+    "natural", "clean", "soft", "neutral", "minimal", "subtle", "bare", "simple", "undone", "muted", "understated"
+  ],
+  "no makeup": [
+    "barely-there", "no makeup", "invisible", "skin-like", "real-skin", "effortless", "fresh-faced","bare", "minimal"
+  ],
+  "fresh": [
+    "fresh", "dewy", "glowy", "radiant", "hydrated", "healthy", "light-reflecting", "peachy",
+    "warm"
+  ],
+  "soft glam": [
+    "soft glam", "natural glam", "diffused", "refined", "velvety", "dimensional", "silky", "enhanced", "luminous"
+  ],
+  "glamorous": [
+    "glam", "glamorous", "full glam", "sparkly", "glittery", "high-shine", "red carpet", "dramatic"
+  ],
+  "bold": [
+    "bold", "vibrant", "intense", "saturated", "bright", "electric", "dramatic", "colorful"
+  ],
+  "romantic": [
+    "romantic", "rosy", "blush", "lovely", "flirty", "soft pink", "valentine", "feminine"
+  ],
+  "elegant": [
+    "elegant", "classic", "timeless", "refined", "chic", "formal", "polished", "sophisticated"
+  ],
+  "edgy": [
+    "edgy", "grunge", "gothic", "dark", "alternative", "experimental", "rebellious"
+  ],
+  "bronzed": [
+    "bronzed", "sun-kissed", "golden", "tan", "warm", "beachy", "summer glow", "bronze"
+  ],
+  "evening": [
+    "evening", "night-out", "after dark", "smoky", "deep", "party makeup", "night glam"
+  ],
+  "daytime": [
+    "daytime", "everyday", "light", "wearable", "work-appropriate", "casual", "office"
+  ]
+}
