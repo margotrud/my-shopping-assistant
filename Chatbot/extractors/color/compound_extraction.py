@@ -9,9 +9,9 @@ Strategies:
 - Fallback combinations with suffix and fuzzy logic
 """
 
-from typing import List, Tuple, Set, Optional
+from typing import List, Tuple, Set
 import spacy
-from Chatbot.extractors.color.tokenizer_utils import singularize
+from Chatbot.extractors.color.tokenizer import singularize
 from Chatbot.extractors.general.helpers import split_glued_tokens
 from Chatbot.extractors.color.modifier_resolution import resolve_modifier_with_suffix_fallback, should_suppress_compound
 

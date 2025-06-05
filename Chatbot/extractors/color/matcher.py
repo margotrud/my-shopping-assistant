@@ -13,7 +13,7 @@ Features:
 from pathlib import Path
 import json
 from typing import Set, Optional
-from rapidfuzz import process, fuzz
+from rapidfuzz import process
 
 from rapidfuzz import fuzz
 from typing import Dict, List
