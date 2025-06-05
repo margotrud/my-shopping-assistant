@@ -2,7 +2,7 @@
 
 import unittest
 from unittest.mock import patch
-from Chatbot.extractors.color.color_segment_logic import resolve_fallback_tokens
+from Chatbot.extractors.color.extract.color_segment_logic import resolve_fallback_tokens
 
 rgb_map = {
     "soft pink": (255, 192, 203),

@@ -10,7 +10,7 @@ from typing import List, Set
 import spacy
 from collections import Counter
 
-from Chatbot.extractors.color.tokenizer import singularize
+from Chatbot.extractors.color.core.tokenizer import singularize
 
 
 def extract_standalone_phrases(

@@ -23,7 +23,7 @@ from pathlib import Path
 import spacy
 
 from Chatbot.extractors.color import known_tones
-from Chatbot.extractors.color.matcher import match_multiword_expressions
+from Chatbot.extractors.color.core.matcher import match_multiword_expressions
 from Chatbot.extractors.general.helpers import fuzzy_token_match, get_all_trigger_tokens
 
 # ──────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ import unittest
 import os
 import json
 from Chatbot.extractors.color import known_tones
-from Chatbot.extractors.color.categorizer import build_tone_modifier_mappings
+from Chatbot.extractors.color.extract.categorizer import build_tone_modifier_mappings
 
 class TestBuildToneModifierMappings(unittest.TestCase):
 

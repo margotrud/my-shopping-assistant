@@ -1,9 +1,6 @@
 # Chatbot/extractors/color/categorizer/test_categorize_color_tokens_with_mapping.py
 import unittest
-import webcolors
-import json
-import os
-from Chatbot.extractors.color.categorizer import categorize_color_tokens_with_mapping
+from Chatbot.extractors.color.extract.categorizer import categorize_color_tokens_with_mapping
 from Chatbot.extractors.color import known_tones
 
 

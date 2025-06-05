@@ -1,7 +1,7 @@
 import unittest
 from Chatbot.extractors.general.helpers import split_glued_tokens
 from Chatbot.extractors.color import known_tones
-from Chatbot.extractors.color.matcher import load_known_modifiers
+from Chatbot.extractors.color.core.matcher import load_known_modifiers
 
 class TestSplitGluedTokens(unittest.TestCase):
 

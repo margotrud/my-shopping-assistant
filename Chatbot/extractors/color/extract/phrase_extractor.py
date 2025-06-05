@@ -11,10 +11,10 @@ Public interface only:
 from typing import List, Set
 
 from Chatbot.extractors.color import known_tones, all_webcolor_names
-from Chatbot.extractors.color.tokenizer import tokenize_text
-from Chatbot.extractors.color.compound_extraction import extract_compound_phrases
-from Chatbot.extractors.color.standalone_extraction import extract_standalone_phrases, extract_lone_tones
-from Chatbot.extractors.color.fallback_extraction import extract_suffix_fallbacks
+from Chatbot.extractors.color.core.tokenizer import tokenize_text
+from Chatbot.extractors.color.extract.compound_extraction import extract_compound_phrases
+from Chatbot.extractors.color.extract.standalone_extraction import extract_standalone_phrases, extract_lone_tones
+from Chatbot.extractors.color.extract.fallback_extraction import extract_suffix_fallbacks
 
 
 def extract_all_descriptive_color_phrases(

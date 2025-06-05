@@ -19,11 +19,11 @@ import spacy
 import logging
 from typing import List, Set, Dict, Tuple, Optional, Union
 
-from Chatbot.extractors.color.phrase_extractor import extract_phrases_from_segment
+from Chatbot.extractors.color.extract.phrase_extractor import extract_phrases_from_segment
 from Chatbot.extractors.color.simplifier import simplify_phrase_if_needed
-from Chatbot.extractors.color.categorizer import clean_and_categorize
-from Chatbot.extractors.color.rgb_utils import get_rgb_from_descriptive_color_llm_first
-from Chatbot.extractors.color.rgb_utils import find_similar_color_names
+from Chatbot.extractors.color.extract.categorizer import clean_and_categorize
+from Chatbot.extractors.color.core.rgb_utils import get_rgb_from_descriptive_color_llm_first
+from Chatbot.extractors.color.core.rgb_utils import find_similar_color_names
 
 
 logger = logging.getLogger("ColorPipeline")

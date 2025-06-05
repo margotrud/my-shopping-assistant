@@ -1,8 +1,8 @@
 import unittest
 import json
 from pathlib import Path
-from typing import Dict, List
-from Chatbot.extractors.color.categorizer import map_expressions_to_tones
+from typing import List
+from Chatbot.extractors.color.extract.categorizer import map_expressions_to_tones
 
 class TestMapExpressionsToTones(unittest.TestCase):
 

@@ -3,8 +3,7 @@
 import unittest
 import os
 import json
-from Chatbot.extractors.color import known_tones
-from Chatbot.extractors.color.categorizer import clean_and_categorize
+from Chatbot.extractors.color.extract.categorizer import clean_and_categorize
 
 class TestCleanAndCategorize(unittest.TestCase):
 

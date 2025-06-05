@@ -4,7 +4,7 @@ import unittest
 import os
 import json
 from Chatbot.extractors.color import known_tones
-from Chatbot.extractors.color.color_segment_logic import process_segment_colors, aggregate_results
+from Chatbot.extractors.color.extract.color_segment_logic import aggregate_results
 
 class TestAggregateResults(unittest.TestCase):
 

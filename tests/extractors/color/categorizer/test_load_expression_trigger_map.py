@@ -2,7 +2,7 @@
 
 import unittest
 from pathlib import Path
-from Chatbot.extractors.color.categorizer import load_expression_trigger_map
+from Chatbot.extractors.color.extract.categorizer import load_expression_trigger_map
 
 class TestLoadExpressionTriggerMap(unittest.TestCase):
 

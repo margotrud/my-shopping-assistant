@@ -1,5 +1,5 @@
 import unittest
-from Chatbot.extractors.color.tokenizer import tokenize_text
+from Chatbot.extractors.color.core.tokenizer import tokenize_text
 
 class TestTokenizeText(unittest.TestCase):
     def test_case_01(self): self.assertEqual(dict(tokenize_text('')[1]), {})

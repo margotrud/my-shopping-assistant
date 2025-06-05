@@ -9,7 +9,7 @@ Provides logic to resolve modifier candidates:
 """
 
 from typing import Optional, Set
-from Chatbot.extractors.color.matcher import fuzzy_match_modifier
+from Chatbot.extractors.color.core.matcher import fuzzy_match_modifier
 
 
 def resolve_modifier_with_suffix_fallback(

@@ -16,7 +16,7 @@ from typing import Set, Dict, Any, Tuple
 from Chatbot.extractors.general.sentiment import (contains_sentiment_splitter_with_segments,
                                                   classify_segments_by_sentiment_no_neutral)
 
-from Chatbot.extractors.color.color_segment_logic import build_sentiment_output
+from Chatbot.extractors.color.extract.color_segment_logic import build_sentiment_output
 from Chatbot.extractors.color.extractor import resolve_color_conflicts
 
 from Chatbot.extractors.general.llm_cache import load_cache_from_file

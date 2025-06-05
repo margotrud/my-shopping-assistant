@@ -9,7 +9,7 @@ Example: 'peachy', 'reddish'
 
 from typing import List, Set
 import spacy
-from Chatbot.extractors.color.tokenizer import singularize
+from Chatbot.extractors.color.core.tokenizer import singularize
 
 
 def extract_suffix_fallbacks(

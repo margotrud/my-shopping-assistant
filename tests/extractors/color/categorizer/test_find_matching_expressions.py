@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 import json
 
-from Chatbot.extractors.color.categorizer import find_matching_expressions
+from Chatbot.extractors.color.extract.categorizer import find_matching_expressions
 
 class TestFindMatchingExpressions(unittest.TestCase):
 
