@@ -9,7 +9,7 @@ class TestMapExpressionsToTones(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         data_path = Path(__file__).resolve().parents[4] / "Data"
-        with open(data_path / "expression_triggers.json", "r", encoding="utf-8") as f:
+        with open(data_path / "expression_definition.json", "r", encoding="utf-8") as f:
             cls.trigger_map = json.load(f)
         # known_tones should be all tones used in your products
         with open(data_path / "expression_aliases.json", "r", encoding="utf-8") as f:

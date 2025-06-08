@@ -30,7 +30,8 @@ def load_known_modifiers() -> Set[str]:
         FileNotFoundError: If the JSON file is not found at expected path.
         ValueError: If the JSON content is invalid or malformed.
     """
-    data_path = Path(__file__).resolve().parents[3] / "Data" / "known_modifiers.json"
+    data_path = Path(__file__).resolve().parents[4] / "Data" / "known_modifiers.json"
+    print(f"[DEBUG] Trying to load from: {data_path}")
 
     try:
         with data_path.open("r", encoding="utf-8") as f:

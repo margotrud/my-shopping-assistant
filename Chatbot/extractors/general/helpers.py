@@ -61,7 +61,6 @@ def fuzzy_token_match(token: str, target: str, threshold: int = 75) -> bool:
     - Full fuzzy match (only when both are 1-word)
     - Multi-word triggers require all words to be in token
     """
-    print(f"[🧪 FUZZY CHECK] token='{token}' vs target='{target}'")
 
     token = token.lower()
     target = target.lower()
@@ -89,13 +88,11 @@ def fuzzy_token_match(token: str, target: str, threshold: int = 75) -> bool:
         if all(part in token for part in parts):
             print("   ✅ FULL MULTI-WORD MATCH")
             return True
-        print("   🚫 SKIPPED (multi-word not fully matched)")
         return False
 
     # 5. Fuzzy match (only if both are single-word)
     if " " not in token and " " not in target:
         score = fuzz.ratio(token, target)
-        print(f"   🤏 FUZZY SCORE = {score}")
         return score >= threshold
 
     print("   🚫 SKIPPED (fallback)")

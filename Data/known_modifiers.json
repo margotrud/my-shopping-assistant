@@ -1,15 +1,13 @@
 [
-  "soft", "classic","muted", "bold", "bright", "deep", "rich", "vibrant", "pastel", "sheer", "opaque",
-  "natural", "shimmery", "glossy", "dewy", "luminous", "matte", "satin", "creamy", "powdery",
-  "subtle", "intense", "neutral", "warm", "cool", "rosy", "golden", "olive", "peachy",
- "ivory", "pinkish", "reddish", "bluish", "brownish", "fair", "light", "medium",
-  "tan", "dark", "very light", "very fair", "very deep", "very dark", "ultra light",
-  "ultra deep", "medium-deep", "medium-light", "medium-dark", "cool-neutral", "warm-neutral",
-  "radiant", "bare", "pearly", "metallic","bronzed", "rosé", "ashy", "dusty", "cool-toned", "warm-toned", "neutral-toned", "barely-there",
-  "rich-toned", "bold-toned", "soft-focus", "neutral-cool", "neutral-warm", "pinky", "gold-flecked",
-  "silky", "shiny", "flashy", "glitter", "shimmer", "neon", "electric", "seafoam", "pearl", "off", "icy", "sparkly", "burnt",
-  "luxurious", "glow"
-
+  "ashy", "bare", "barely-there","bold", "bold-toned", "bright", "bronzed", "brownish", "classic",
+  "cool", "cool-neutral", "cool-toned", "creamy", "dark", "deep", "dusty", "electric",
+  "fair", "flashy", "glam", "glittery", "glossy", "gold-flecked", "golden", "glowy",
+  "icy", "intense", "ivory", "light", "luminous", "matte", "medium", "medium-dark",
+  "medium-deep", "medium-light", "metallic", "muted", "natural", "neon", "neutral",
+  "neutral-cool", "neutral-toned", "neutral-warm", "off-white", "opaque", "pastel",
+  "peachy", "pearly", "pinkish", "pinky", "powdery", "radiant", "reddish", "rich",
+  "rich-toned", "rosé", "rosy", "satin", "seafoam", "shimmery", "shiny", "sheer",
+  "silky", "soft", "soft-focus", "sparkly", "subtle", "tan", "ultra deep", "ultra light",
+  "very dark", "very fair", "very light", "vibrant", "warm", "warm-neutral",
+  "warm-toned"
 ]
-
-

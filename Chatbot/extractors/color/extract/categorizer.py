@@ -36,10 +36,10 @@ IGNORED_POS = {"ADV", "PRON", "DET", "CCONJ", "ADP", "INTJ", "PART", "SCONJ", "V
 # ──────────────────────────────────────────────────────────────
 # Trigger Map Loader
 # ──────────────────────────────────────────────────────────────
-
-def load_expression_trigger_map(path: Optional[str] = None) -> Dict[str, List[str]]:
-    default_path = Path(__file__).resolve().parents[3] / "Data" / "expression_triggers.json"
-    with (Path(path) if path else default_path).open("r", encoding="utf-8") as f:
+def load_expression_definitions(path: Path = None):
+    if path is None:
+        path = Path(__file__).resolve().parents[4] / "Data" / "expression_definition.json"
+    with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 # ──────────────────────────────────────────────────────────────
@@ -48,6 +48,8 @@ def load_expression_trigger_map(path: Optional[str] = None) -> Dict[str, List[st
 
 def get_valid_tokens(text: str, trigger_map: Dict[str, List[str]]) -> List[str]:
     tokens = nlp(text)
+    print(f"[🧪 TOKENS] → {[f'{t.text} ({t.pos_})' for t in tokens]}")
+
     cleaned = []
     trigger_tokens = get_all_trigger_tokens(trigger_map)
 
@@ -86,8 +88,10 @@ def find_matching_expressions(text: str, trigger_map: Dict[str, List[str]]) -> L
         blocked_tokens.update(phrase.lower().split())
 
     for token in tokens:
+
         if token in blocked_tokens:
             continue
+
         for vibe, triggers in trigger_map.items():
             for trig in triggers:
                 if fuzzy_token_match(token, trig):
@@ -116,7 +120,7 @@ def map_expressions_to_tones(text: str, trigger_map: Dict[str, List[str]], known
 # ──────────────────────────────────────────────────────────────
 
 def load_expression_context_rules(path: Optional[str] = None) -> Dict[str, Dict[str, List[str]]]:
-    default_path = Path(__file__).resolve().parents[3] / "Data" / "expression_context_rules.json"
+    default_path = Path(__file__).resolve().parents[4] / "Data" / "expression_context_rules.json"
     with (Path(path) if path else default_path).open("r", encoding="utf-8") as f:
         return json.load(f)
 

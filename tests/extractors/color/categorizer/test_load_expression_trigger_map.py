@@ -8,7 +8,7 @@ class TestLoadExpressionTriggerMap(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        path = Path(__file__).resolve().parents[4] / "Data" / "expression_triggers.json"
+        path = Path(__file__).resolve().parents[4] / "Data" / "expression_definition.json"
         cls.data = load_expression_trigger_map(path)
 
     def test_case_01(self): self.assertIn("natural", self.data)

@@ -10,7 +10,7 @@ class TestFindMatchingExpressions(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        data_path = Path(__file__).resolve().parents[4]/ "Data" / "expression_triggers.json"
+        data_path = Path(__file__).resolve().parents[4]/ "Data" / "expression_definition.json"
         with open(data_path, "r", encoding="utf-8") as f:
             cls.trigger_map = json.load(f)
 
