@@ -21,14 +21,14 @@ from typing import Set, Dict, Tuple, Any, List, Optional
 
 import webcolors
 
-from Chatbot.extractors.color.extract.phrase_extractor import extract_all_descriptive_color_phrases
-from Chatbot.extractors.color.llm.simplifier import simplify_color_description_with_llm
-from Chatbot.extractors.color.extract.categorizer import categorize_color_tokens_with_mapping
-from Chatbot.extractors.color.core.rgb_utils import (
+from Chatbot.extractors.color.old.extract import extract_all_descriptive_color_phrases
+from Chatbot.extractors.color.old.llm import simplify_color_description_with_llm
+from Chatbot.extractors.color.old.extract import categorize_color_tokens_with_mapping
+from Chatbot.extractors.color.old.core import (
     get_rgb_from_descriptive_color_llm_first,
     find_similar_color_names
 )
-from Chatbot.extractors.general.sentiment import (
+from Chatbot.extractors.general.old.sentiment import (
     contains_sentiment_splitter_with_segments,
     classify_segments_by_sentiment_no_neutral
 )
