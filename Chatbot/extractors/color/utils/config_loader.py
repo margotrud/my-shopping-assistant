@@ -34,6 +34,7 @@ This script contributes to making the codebase DRY, modular, and professional.
 
 import json
 from pathlib import Path
+from typing import Set
 
 
 def load_json_from_data_dir(filename: str) -> dict:
@@ -53,3 +54,29 @@ def load_json_from_data_dir(filename: str) -> dict:
     path = Path(__file__).resolve().parents[3] / "Data" / filename
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def load_known_modifiers() -> Set[str]:
+    """
+    Loads the known modifier vocabulary from 'Data/known_modifiers.json'.
+
+    The JSON file should contain a list of modifier strings.
+
+    Returns:
+        Set[str]: Set of modifier strings (e.g., {'soft', 'bold'}).
+
+    Raises:
+        FileNotFoundError: If the JSON file is not found at expected path.
+        ValueError: If the JSON content is invalid or malformed.
+    """
+    data_path = Path(__file__).resolve().parents[3] / "Data" / "known_modifiers.json"
+    print(f"[DEBUG] Trying to load from: {data_path}")
+
+    try:
+        with data_path.open("r", encoding="utf-8") as f:
+            modifiers = json.load(f)
+        return set(modifiers)
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Modifier vocab file not found at {data_path}") from e
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in modifier vocab file at {data_path}") from e
