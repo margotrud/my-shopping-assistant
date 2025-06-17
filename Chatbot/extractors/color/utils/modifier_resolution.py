@@ -25,7 +25,7 @@ Examples:
 True
 """
 
-from typing import Optional, Set
+from typing import Optional, Set, Union
 from rapidfuzz import fuzz
 
 
@@ -36,61 +36,86 @@ def resolve_modifier_token(
     allow_fuzzy: bool = True,
     is_tone: bool = False
 ) -> Optional[str]:
-    """
-    Resolves a modifier token to a known modifier using direct match,
-    suffix stripping, or optional fuzzy matching.
-
-    Args:
-        word (str): Input token (e.g., 'barely', 'softy')
-        known_modifiers (Set[str]): Set of valid modifiers.
-        known_tones (Optional[Set[str]]): Optional tones for suffix fallback disambiguation.
-        allow_fuzzy (bool): Whether to use fuzzy fallback.
-        is_tone (bool): If True, allows tone disambiguation via known_tones.
-
-    Returns:
-        Optional[str]: Best matched modifier or None if unresolved.
-    """
     raw = word.lower()
+    print(f"[🔍 RESOLVE] Trying to resolve: '{raw}'")
 
     # 1. Direct match
     if raw in known_modifiers:
+        print(f"[✅ DIRECT MATCH] '{raw}' found in modifiers")
         return raw
 
-    # 2. Suffix fallback
-    if raw.endswith("y"):
-        base = raw[:-1]
-        if base in known_modifiers or (is_tone and known_tones and base in known_tones):
-            return base
-    if raw.endswith("ish"):
-        base = raw[:-3]
-        if base in known_modifiers or (is_tone and known_tones and base in known_tones):
-            return base
+    # 2. Suffix-stripped base (and fuzzy match on base)
+    for suffix in ["y", "ish"]:
+        if raw.endswith(suffix):
+            base = raw[:-len(suffix)]
+            if base in known_modifiers:
+                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{base}' in modifiers")
+                return base
+            if is_tone and known_tones and base in known_tones:
+                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{base}' in tones")
+                return base
+            if allow_fuzzy:
+                match = fuzzy_match_modifier(base, known_modifiers)
+                if match:
+                    print(f"[✨ FUZZY ON BASE] '{base}' → '{match}'")
+                    return match
+                if is_tone and known_tones:
+                    match = fuzzy_match_modifier(base, known_tones)
+                    if match:
+                        print(f"[✨ FUZZY ON BASE TONE] '{base}' → '{match}'")
+                        return match
 
-    # 3. Fuzzy fallback
+    # 3. Fuzzy match on full word
     if allow_fuzzy:
         match = fuzzy_match_modifier(raw, known_modifiers)
         if match:
+            print(f"[✨ FUZZY MODIFIER MATCH] '{raw}' → '{match}'")
             return match
+        if is_tone and known_tones:
+            match = fuzzy_match_modifier(raw, known_tones)
+            if match:
+                print(f"[✨ FUZZY TONE MATCH] '{raw}' → '{match}'")
+                return match
 
+    print(f"[❌ UNRESOLVED] '{raw}' could not be matched")
     return None
 
 
-def fuzzy_match_modifier(token: str, target: str, threshold: int = 75) -> bool:
+def fuzzy_match_modifier(token: str, target: Union[str, Set[str]], threshold: int = 75):
     """
-    Checks if two tokens match fuzzily using edit distance.
+    Checks if two tokens match fuzzily (string-to-string or string-to-set).
 
     Args:
-        token (str): Input token.
-        target (str): Target known modifier.
-        threshold (int): Minimum similarity score (default: 85)
+        token (str): Input token to test.
+        target (Union[str, Set[str]]): Single known modifier or set of them.
+        threshold (int): Minimum similarity score.
 
     Returns:
-        bool: True if match passes threshold.
+        Union[bool, Optional[str]]:
+            - If target is a string → returns bool
+            - If target is a set → returns best matching string or None
     """
-    score = fuzz.ratio(token.lower(), target.lower())
-    print(f"[🧪 DEBUG FUZZY MATCH] '{token}' vs '{target}' → score={score} (threshold={threshold})")
-    return score >= threshold
+    token = token.lower()
 
+    if isinstance(target, str):
+        score = fuzz.ratio(token, target.lower())
+        print(f"[🧪 FUZZY COMPARE] '{token}' vs '{target.lower()}' → score={score} (threshold={threshold})")
+        return score >= threshold
+
+    best_score = 0
+    best_match = None
+    for mod in target:
+        score = fuzz.ratio(token, mod.lower())
+        print(f"[🧪 FUZZY SET CHECK] '{token}' vs '{mod.lower()}' → score={score}")
+        if score >= threshold and score > best_score:
+            best_score = score
+            best_match = mod
+
+    if best_match:
+        print(f"[✅ BEST MATCH FOUND] '{token}' → '{best_match}' with score={best_score}")
+    else:
+        print(f"[❌ NO MATCH] '{token}' → No match ≥ {threshold}")
+    return best_match
 def _is_y_suffix_from_tone(word: str, known_tones: Optional[Set[str]]) -> bool:
     """
     Checks if a modifier candidate like 'rosy' ends in 'y' and
