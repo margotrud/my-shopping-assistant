@@ -46,13 +46,17 @@ Dependencies:
 -------------
 - Standard library only
 """
+
 import math
-from multiprocessing import process
+from rapidfuzz import process
 from typing import Dict, Tuple, Optional, List
 
 import webcolors
 from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 def choose_representative_rgb(
     rgb_mapping: Dict[str, Tuple[int, int, int]]
@@ -140,10 +144,8 @@ def find_similar_color_names(
 
 def fuzzy_match_rgb_from_known_colors(color_phrase: str) -> Optional[Tuple[int, int, int]]:
     """
-    Fuzzy matches a simplified color phrase against XKCD and CSS4 palettes,
-    and returns the closest RGB value if a strong match is found.
-
-    Intended for fallback use when exact resolution fails.
+    Resolves a color phrase to an RGB triplet using exact and fuzzy matching.
+    Prioritizes CSS4 color names over XKCD when both are valid matches.
 
     Args:
         color_phrase (str): Cleaned color term (e.g., 'dusty rose').
@@ -151,18 +153,15 @@ def fuzzy_match_rgb_from_known_colors(color_phrase: str) -> Optional[Tuple[int, 
     Returns:
         Optional[Tuple[int, int, int]]: RGB tuple if match found, else None.
     """
-    simplified = color_phrase.lower()
+    simplified = color_phrase.lower().replace(" ", "")
 
-    try:
-        xkcd_names = [name.replace("xkcd:", "") for name in XKCD_COLORS]
-        best_match_xkcd, score_xkcd = process.extractOne(simplified, xkcd_names)
-        if score_xkcd >= 80:
-            hex_code = XKCD_COLORS.get(f"xkcd:{best_match_xkcd}")
-            if hex_code:
-                return webcolors.hex_to_rgb(hex_code)
-    except Exception as e:
-        logger.error(f"[FUZZY MATCH] XKCD error for '{simplified}': {e}")
+    # ---------- Exact Match ----------
+    if simplified in CSS4_COLORS:
+        return webcolors.hex_to_rgb(CSS4_COLORS[simplified])
+    if f"xkcd:{simplified}" in XKCD_COLORS:
+        return webcolors.hex_to_rgb(XKCD_COLORS[f"xkcd:{simplified}"])
 
+    # ---------- Fuzzy Match: CSS4 First ----------
     try:
         css_names = list(CSS4_COLORS.keys())
         best_match_css, score_css = process.extractOne(simplified, css_names)
@@ -172,5 +171,16 @@ def fuzzy_match_rgb_from_known_colors(color_phrase: str) -> Optional[Tuple[int, 
                 return webcolors.hex_to_rgb(hex_code)
     except Exception as e:
         logger.error(f"[FUZZY MATCH] CSS4 error for '{simplified}': {e}")
+
+    # ---------- Fuzzy Match: XKCD Fallback ----------
+    try:
+        xkcd_names = [name.replace("xkcd:", "") for name in XKCD_COLORS]
+        best_match_xkcd, score_xkcd = process.extractOne(simplified, xkcd_names)
+        if score_xkcd >= 80:
+            hex_code = XKCD_COLORS.get(f"xkcd:{best_match_xkcd}")
+            if hex_code:
+                return webcolors.hex_to_rgb(hex_code)
+    except Exception as e:
+        logger.error(f"[FUZZY MATCH] XKCD error for '{simplified}': {e}")
 
     return None
