@@ -1,3 +1,9 @@
+from typing import Dict, List, Set
+
+from Chatbot.extractors.color.shared.vocab import known_tones
+from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+
+
 def get_all_trigger_tokens(trigger_map: Dict[str, List[str]]) -> Set[str]:
     """
     Extract individual lowercase tokens from all trigger phrases.
