@@ -68,14 +68,14 @@ def resolve_modifier_token(
 
     # 3. Fuzzy fallback
     if allow_fuzzy:
-        for mod in known_modifiers:
-            if fuzzy_match_modifier(raw, mod):
-                return mod
+        match = fuzzy_match_modifier(raw, known_modifiers)
+        if match:
+            return match
 
     return None
 
 
-def fuzzy_match_modifier(token: str, target: str, threshold: int = 85) -> bool:
+def fuzzy_match_modifier(token: str, target: str, threshold: int = 75) -> bool:
     """
     Checks if two tokens match fuzzily using edit distance.
 
@@ -87,7 +87,9 @@ def fuzzy_match_modifier(token: str, target: str, threshold: int = 85) -> bool:
     Returns:
         bool: True if match passes threshold.
     """
-    return fuzz.ratio(token.lower(), target.lower()) >= threshold
+    score = fuzz.ratio(token.lower(), target.lower())
+    print(f"[🧪 DEBUG FUZZY MATCH] '{token}' vs '{target}' → score={score} (threshold={threshold})")
+    return score >= threshold
 
 def _is_y_suffix_from_tone(word: str, known_tones: Optional[Set[str]]) -> bool:
     """
