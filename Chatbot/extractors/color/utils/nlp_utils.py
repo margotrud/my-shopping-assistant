@@ -1,3 +1,6 @@
+from nltk.corpus import wordnet
+
+
 def are_antonyms(word1: str, word2: str) -> bool:
     """
        Determines whether two words are antonyms based on WordNet definitions.
