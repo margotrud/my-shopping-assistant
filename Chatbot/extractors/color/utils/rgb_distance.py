@@ -46,9 +46,13 @@ Dependencies:
 -------------
 - Standard library only
 """
+import math
+from multiprocessing import process
+from typing import Dict, Tuple, Optional, List
 
+import webcolors
+from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
 
-from typing import Dict, Tuple, Optional
 
 def choose_representative_rgb(
     rgb_mapping: Dict[str, Tuple[int, int, int]]
