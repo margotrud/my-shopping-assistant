@@ -42,42 +42,114 @@ Example:
 >>> split_glued_tokens("shinyglam", known)
 []
 """
+from typing import Set, Optional, Callable, List
 
 
-from typing import List, Set
-
-def split_glued_tokens(token: str, known_tokens: Set[str]) -> List[str]:
+def split_glued_tokens(
+    token: str,
+    known_tokens: Set[str],
+    fallback_token_resolver: Optional[Callable[[str], Optional[str]]] = None,
+    debug: bool = False
+) -> List[str]:
     """
-    Splits a glued token into known sub-tokens using backtracking.
+    Splits a glued token into known sub-tokens using backtracking,
+    preferring the longest valid decomposition. If no valid split is found,
+    optionally applies a fallback resolver, and finally applies substring-based
+    longest-known-token decomposition.
 
     Args:
-        token (str): The glued token (e.g., 'deepblue', 'softpink')
-        known_tokens (Set[str]): Set of known color-related tokens
+        token (str): The glued token (e.g., 'deepblue', 'cooltone')
+        known_tokens (Set[str]): Set of known base or compound tokens
+        fallback_token_resolver (Callable[[str], Optional[str]], optional):
+            Function to resolve unknown suffixes (e.g., known tone matcher)
+        debug (bool): If True, prints detailed debug information
 
     Returns:
-        List[str]: A list of sub-tokens if a valid split is found, else empty list.
+        List[str]: List of split tokens if found, otherwise [].
     """
     token = token.lower()
     n = len(token)
     results = []
 
+    if debug:
+        print(f"\n[🔍 GLUED TOKEN SPLIT] Input: '{token}'")
+        print(f"[📚 KNOWN TOKENS SAMPLE] → {sorted(list(known_tokens))[:10]} ...")
+
     def backtrack(start: int, path: List[str]):
         if start == n:
+            if debug:
+                print(f"   ✅ COMPLETE SPLIT → {path}")
             results.append(path[:])
             return
         for end in range(start + 1, n + 1):
             piece = token[start:end]
             if piece in known_tokens:
+                if debug:
+                    print(f"   🔹 MATCHED: '{piece}' at [{start}:{end}] → path so far = {path + [piece]}")
                 path.append(piece)
                 backtrack(end, path)
                 path.pop()
+            else:
+                if debug:
+                    print(f"   ⛔ REJECTED: '{piece}' at [{start}:{end}]")
 
     backtrack(0, [])
 
-    if results and len(results[0]) > 1:
-        return results[0]
-    elif token in known_tokens:
+    if results:
+        best = max(results, key=len)
+        if debug:
+            print(f"[🏁 FINAL CHOICE] Longest valid split → {best}")
+        return best
+
+    # 🔁 Fallback: try prefix + resolvable suffix
+    if fallback_token_resolver:
+        if debug:
+            print("[🛟 FALLBACK MODE] No valid full split found, trying prefix + suffix resolution...")
+        for i in range(1, len(token)):
+            prefix, suffix = token[:i], token[i:]
+            if prefix in known_tokens:
+                resolved_suffix = fallback_token_resolver(suffix)
+                if resolved_suffix:
+                    if debug:
+                        print(f"   ✅ FALLBACK SPLIT → prefix: '{prefix}' + resolved suffix: '{resolved_suffix}'")
+                    return [prefix, resolved_suffix]
+                else:
+                    if debug:
+                        print(f"   ⛔ Fallback failed: '{suffix}' not resolvable after prefix '{prefix}'")
+
+    if token in known_tokens:
+        if debug:
+            print(f"[✔️ WHOLE TOKEN MATCH] Full token '{token}' is directly known")
         return [token]
+
+    if debug:
+        print("[❌ FULL SPLIT FAILED] No valid split or resolver result found.")
+
+    # 🧠 FINAL LAYER FALLBACK: Try longest known substring match
+    longest_known = ""
+    start_idx = -1
+
+    for known in known_tokens:
+        idx = token.find(known)
+        if idx != -1 and len(known) > len(longest_known):
+            longest_known = known
+            start_idx = idx
+
+    if longest_known:
+        prefix = token[:start_idx]
+        suffix = token[start_idx + len(longest_known):]
+        parts = []
+        if prefix:
+            parts.append(prefix)
+        parts.append(longest_known)
+        if suffix:
+            parts.append(suffix)
+
+        if debug:
+            print(f"[🧪 FINAL FALLBACK] Longest known inside token: '{longest_known}'")
+            print(f" → Decomposed as: {parts}")
+        return parts
+
     return []
 
 

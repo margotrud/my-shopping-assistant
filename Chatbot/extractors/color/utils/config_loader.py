@@ -80,3 +80,12 @@ def load_known_modifiers() -> Set[str]:
         raise FileNotFoundError(f"Modifier vocab file not found at {data_path}") from e
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in modifier vocab file at {data_path}") from e
+
+def load_known_suffix_tokens() -> Set[str]:
+    """
+    Loads known suffix tokens used for NLP-aware phrase splitting (e.g., 'tone', 'shade').
+
+    Returns:
+        Set[str]: A set of valid suffix tokens.
+    """
+    return set(load_json_from_data_dir("known_suffix_tokens.json"))
