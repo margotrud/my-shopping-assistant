@@ -34,7 +34,7 @@ This script contributes to making the codebase DRY, modular, and professional.
 
 import json
 from pathlib import Path
-from typing import Set
+from typing import Set, Dict
 
 
 def load_json_from_data_dir(filename: str) -> dict:
@@ -89,3 +89,29 @@ def load_known_suffix_tokens() -> Set[str]:
         Set[str]: A set of valid suffix tokens.
     """
     return set(load_json_from_data_dir("known_suffix_tokens.json"))
+
+def load_expression_context_rules() -> Dict[str, Dict[str, list]]:
+    """
+    Loads contextual promotion rules used for expression inference from tokens.
+
+    Expects a JSON file named `expression_context_rules.json` in the /Data directory
+    structured as:
+        {
+            "expression_name": {
+                "require_tokens": [...],
+                "context_clues": [...]
+            },
+            ...
+        }
+
+    Returns:
+        Dict[str, Dict[str, List[str]]]: Context rules for expression tagging.
+    """
+    data_dir = Path(__file__).resolve().parents[3] / "Data"
+    file_path = data_dir / "expression_context_rules.json"
+
+    if not file_path.exists():
+        raise FileNotFoundError(f"[❌ MISSING FILE] Could not find: {file_path}")
+
+    with file_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
