@@ -63,21 +63,23 @@ def get_valid_tokens(tokens: List, expression_map: dict) -> List[str]:
 def map_expressions_to_tones(
     text: str,
     expression_def: Dict[str, Dict[str, List[str]]],
-    known_tones: Set[str]
+    known_tones: Set[str],
+    debug: bool = False
 ) -> Dict[str, List[str]]:
     """
     Maps matched expression tags in the input to related color tones.
 
     This function:
     1. Identifies expression matches using fuzzy alias matching.
-    2. For each matched expression, collects any aliases that
-       overlap with known tones.
+    2. For each matched expression, collects any MODIFIERS that
+       overlap with known tone names.
     3. Returns a mapping of expression → relevant tone names.
 
     Args:
         text (str): User input.
         expression_def (dict): Full expression_definition.json content.
         known_tones (Set[str]): Valid tone names (e.g., CSS + XKCD + custom).
+        debug (bool): If True, prints debug logs.
 
     Returns:
         Dict[str, List[str]]: Expression → matching tone names.
@@ -85,13 +87,32 @@ def map_expressions_to_tones(
     matched = match_expression_aliases(text, expression_def)
     result = {}
 
+    if debug:
+        print(f"\n[🔍 USER TEXT] → {text}")
+        print(f"[📌 MATCHED EXPRESSIONS] → {matched}")
+        print(f"[🎨 KNOWN TONES SAMPLE] → {sorted(list(known_tones))[:10]} ...")
+
     for expr in matched:
-        aliases = expression_def.get(expr, {}).get("aliases", [])
-        tones = [tone for tone in known_tones if any(alias in tone for alias in aliases)]
+        modifiers = expression_def.get(expr, {}).get("modifiers", [])
+        if debug:
+            print(f"\n[💡 EXPRESSION] '{expr}' → Modifiers: {modifiers}")
+
+        tones = [
+            tone for tone in known_tones
+            if any(mod in tone for mod in modifiers)
+        ]
+
+        if debug:
+            print(f"[🎯 MATCHED TONES FOR '{expr}'] → {tones if tones else 'None'}")
+
         if tones:
             result[expr] = sorted(set(tones))
 
+    if debug:
+        print(f"\n[✅ FINAL RESULT] → {result}")
+
     return result
+
 
 
 def apply_expression_context_rules(
