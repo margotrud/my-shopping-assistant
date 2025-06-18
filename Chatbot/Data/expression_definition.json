@@ -1,7 +1,7 @@
 {
   "daytime": {
-    "modifiers": [ "bare", "barely-there", "bronzed", "brownish", "clean", "creamy", "dusty", "fair", "ivory", "light",
-      "luminous", "matte", "medium-light", "muted", "natural", "neutral",  "neutral-cool", "neutral-toned",
+    "modifiers": [ "bare", "barely-there", "bronzed", "brownish", "clean", "creamy", "dewy","dusty", "fair", "ivory", "light",
+      "luminous", "matte", "minimalist", "medium-light", "muted", "natural", "neutral",  "neutral-cool", "neutral-toned",
       "neutral-warm", "off-white", "opaque", "pastel", "peachy", "pinky", "powdery", "rosy", "satin", "sheer", "silky",
       "soft", "soft-focus", "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
     "aliases": ["casual", "everyday", "office", "work-appropriate", "daily", "daytime"]
@@ -9,13 +9,13 @@
   "earthy": {
   "modifiers": ["ashy", "bare", "barely-there", "bronzed", "brownish", "creamy", "dusty", "fair", "ivory", "light",
     "matte", "medium", "medium-dark", "medium-deep", "medium-light", "muted", "natural", "neutral", "neutral-warm",
-    "opaque", "peachy", "powdery", "rosy", "satin", "sheer", "soft", "subtle", "tan", "very fair", "warm",
+    "opaque", "peachy", "powdery", "rosy", "rustic","satin", "sheer", "soft", "subtle", "tan", "very fair", "warm",
     "warm-neutral", "warm-toned"],
   "aliases": ["terra cotta", "mocha", "clay", "soil", "earth tones", "earthy"]
 },
   "edgy": {
     "modifiers": ["ashy","bold", "bold-toned", "bright", "cool", "cool-toned", "dark", "deep", "electric", "flashy", "glam",
-      "glittery", "glossy", "gold-flecked", "golden", "icy","intense", "metallic", "neon", "opaque", "radiant",
+      "glittery", "glossy", "gold-flecked", "golden", "icy","intense", "metallic", "neon", "opaque", "playful","radiant",
       "reddish", "rich", "rich-toned", "shimmery", "shiny", "sparkly", "ultra deep", "very dark", "vibrant",
       "warm-toned"],
     "aliases": ["grunge", "alternative style", "moody tones",  "rockstar", "gothic", "experimental", "edgy", "rock", "bold"]
@@ -33,35 +33,35 @@
       "metallic", "muted", "natural", "neutral", "neutral-warm", "opaque", "peachy", "pearly", "pinkish", "powdery",
       "radiant", "reddish", "rich", "rich-toned", "rosé", "rosy", "satin", "shimmery", "shiny", "silky", "soft",
       "sparkly", "subtle", "ultra deep", "very dark", "vibrant", "warm", "warm-toned"],
-    "aliases": ["night-out", "party", "after-dark", "club", "evening"]
+    "aliases": ["night-out", "party", "after-dark", "club", "evening", "tropical"]
   },
   "fresh": {
-    "modifiers": ["bare", "barely-there", "bright","bronzed", "creamy", "fair", "glowy", "ivory", "light", "luminous",
-      "medium-light", "muted", "natural", "neutral", "neutral-warm", "opaque", "pastel", "peachy", "pearly", "pinkish",
+    "modifiers": ["bare", "barely-there", "bright","bronzed", "creamy", "dewy","fair", "glowy", "ivory", "light", "luminous",
+      "medium-light", "minimalist","muted", "natural", "neutral", "neutral-warm", "opaque", "pastel", "peachy", "pearly", "pinkish",
       "pinky", "powdery", "radiant", "rosé", "rosy", "satin", "sheer", "silky", "soft", "soft-focus", "subtle", "tan",
       "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
     "aliases": [
-      "summer", "hydrated", "airy", "youthful", "healthy", "fresh"]
+      "summer", "hydrated", "airy", "youthful", "healthy", "fresh", "tropical"]
   },
   "glamorous": {
-    "modifiers": ["bold", "bold-toned", "bright", "bronzed", "cool", "cool-toned", "dark", "deep", "electric", "flashy", "glam",
+    "modifiers": ["bold", "bold-toned", "bright", "bronzed", "cool", "cool-toned", "dark", "deep", "dewy","dramatic","electric", "flashy", "glam",
       "glittery", "glossy", "gold-flecked", "golden", "glowy", "icy", "intense", "luminous", "matte", "metallic",
-      "opaque", "peachy", "pearly", "pinkish", "powdery", "radiant", "reddish", "rich", "rich-toned", "rosé", "rosy",
+      "opaque", "peachy", "pearly", "playful","pinkish", "powdery", "radiant", "reddish", "rich", "rich-toned", "rosé", "rosy",
       "satin", "shimmery", "shiny", "silky", "soft", "sparkly", "ultra deep", "very dark", "vibrant", "warm",
       "warm-toned"],
-    "aliases": ["red carpet", "evening", "party-ready", "glam", "diva","glamorous", "hollywood"]
+    "aliases": ["red carpet", "evening", "party-ready", "glam", "diva","glamorous", "hollywood", "tropical"]
   },
   "natural": {
-    "modifiers": ["bare", "barely-there", "brownish", "creamy", "dusty", "fair", "ivory", "light", "luminous", "matte",
-      "medium-light", "muted", "natural", "neutral", "neutral-cool", "neutral-toned", "neutral-warm", "off-white",
-      "opaque", "peachy", "pinkish", "pinky", "powdery", "rosy", "satin", "sheer", "silky", "soft", "soft-focus",
+    "modifiers": ["bare", "barely-there", "brownish", "creamy", "dewy", "dusty", "fair", "ivory", "light", "luminous", "matte",
+      "medium-light", "minimalist", "muted", "natural", "neutral", "neutral-cool", "neutral-toned", "neutral-warm", "off-white",
+      "opaque", "peachy", "pinkish", "pinky", "powdery", "rosy", "rustic", "satin", "sheer", "silky", "soft", "soft-focus",
       "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
     "aliases": ["clean", "neutral", "everyday", "minimal", "no-makeup", "invisible","skin-like", "effortless", "natural", "gentle", "bare"]
   },
 
   "romantic": {
-    "modifiers": ["bare", "barely-there", "bronzed", "brownish", "creamy", "dusty", "fair", "glowy", "ivory", "light",
-      "luminous", "matte", "medium-light", "muted", "natural", "neutral", "neutral-warm", "opaque", "pastel", "peachy",
+    "modifiers": ["bare", "barely-there", "bronzed", "brownish", "creamy", "dewy","dusty", "fair", "glowy", "ivory", "light",
+      "luminous", "matte", "medium-light", "minimalist", "muted", "natural", "neutral", "neutral-warm", "opaque", "pastel", "peachy",
       "pearly", "pinkish", "pinky", "powdery", "radiant", "rosé", "rosy", "satin", "sheer", "silky", "soft",
       "soft-focus", "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
     "aliases": ["valentine", "blushy", "feminine", "flirty", "date night", "romantic", "radiance", "gentle"]

@@ -39,12 +39,11 @@ from Chatbot.extractors.color.shared.constants import EXPRESSION_SUPPRESSION_RUL
 
 
 
-def get_valid_tokens(tokens: List[Token], expression_map: dict) -> List[str]:
+def get_valid_tokens(tokens: List, expression_map: dict) -> List[str]:
     """
     Filters input tokens to return only those relevant for expression classification.
 
     Tokens are considered valid if they:
-    - Are adjectives
     - Appear in any alias or modifier list of the expression definition
 
     Args:
@@ -52,20 +51,14 @@ def get_valid_tokens(tokens: List[Token], expression_map: dict) -> List[str]:
         expression_map (dict): Parsed expression_definition.json
 
     Returns:
-        List[str]: Lowercased valid token texts.
+        List[str]: Lowercased valid token texts that match expression triggers.
     """
-    valid = []
     all_triggers = set()
-
     for entry in expression_map.values():
         all_triggers.update(entry.get("aliases", []))
         all_triggers.update(entry.get("modifiers", []))
 
-    for token in tokens:
-        if token.pos_ == "ADJ" or token.text.lower() in all_triggers:
-            valid.append(token.text.lower())
-
-    return valid
+    return [token.text.lower() for token in tokens if token.text.lower() in all_triggers]
 
 def map_expressions_to_tones(
     text: str,
