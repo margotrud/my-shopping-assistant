@@ -79,16 +79,9 @@ def build_prompt(color_phrase: str) -> str:
 
 def is_valid_tone(token: str, tone_keywords: set) -> bool:
     """
-    Determines if a token is a valid tone based on known tones and heuristics.
-
-    Args:
-        token (str): Token to check.
-        tone_keywords (set): Set of known valid tone names.
-
-    Returns:
-        bool: True if token is valid tone, False otherwise.
+    Determines if a token is a valid tone based on known tones and suffix heuristics.
     """
-    return token in tone_keywords or token.endswith(("ish", "y")) or len(token) <= 10
+    return token in tone_keywords or token.endswith(("ish", "y"))
 
 
 def simplify_color_description_with_llm(color_phrase: str) -> List[str]:
