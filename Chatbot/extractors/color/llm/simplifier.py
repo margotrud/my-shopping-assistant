@@ -23,6 +23,8 @@ from matplotlib.colors import XKCD_COLORS
 from dotenv import load_dotenv
 load_dotenv()
 
+from Chatbot.cache.llm_cache import ColorLLMCache
+cache = ColorLLMCache.get_instance()
 
 
 
@@ -38,13 +40,13 @@ def simplify_phrase_if_needed(phrase: str) -> List[str]:
     Returns:
         List[str]: Simplified phrase list or the original phrase in a list.
     """
-    cached = get_cached_simplified(phrase)
+    cached = cache.get_simplified(phrase)
     if cached:
         return cached
 
     simplified = simplify_color_description_with_llm(phrase)
     if simplified:
-        store_simplified_to_cache(phrase, simplified)
+        cache.store_simplified(phrase, simplified)
         return simplified
 
     return [phrase]

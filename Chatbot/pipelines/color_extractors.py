@@ -19,7 +19,7 @@ from Chatbot.extractors.general.old.sentiment import (contains_sentiment_splitte
 from Chatbot.extractors.color.old.extract import build_sentiment_output
 from Chatbot.extractors.color.extractor import resolve_color_conflicts
 
-from Chatbot.extractors.general.old.llm_cache import load_cache_from_file
+from Chatbot.cache.llm_cache import load_cache_from_file
 
 # ──────────────────────────────────────────────────────────
 # LOGGER

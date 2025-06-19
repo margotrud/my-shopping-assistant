@@ -9,7 +9,6 @@ Provides utilities to:
 - Fuzzy match simplified color phrases to known XKCD and CSS4 palettes.
 """
 
-import math
 import json
 import logging
 import os
@@ -21,7 +20,7 @@ import webcolors
 from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
 from rapidfuzz import process
 
-from Chatbot.extractors.color.old.llm.simplifier import simplify_color_description_with_llm
+from Chatbot.extractors.color.llm.simplifier import simplify_color_description_with_llm
 
 
 logger = logging.getLogger(__name__)

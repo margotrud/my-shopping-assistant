@@ -32,7 +32,8 @@ Dependencies:
 - Standard RGB tuple representation
 """
 
-
+from Chatbot.cache.color_llm_cache import ColorLLMCache
+cache = ColorLLMCache.get_instance()
 from typing import Optional, Set, Tuple
 
 def resolve_rgb_with_llm(
@@ -74,9 +75,14 @@ def get_rgb_from_descriptive_color_llm_first(input_color: str) -> Optional[Tuple
     Returns:
         Optional[Tuple[int, int, int]]: RGB triplet if found, else None.
     """
+    rgb_cached = cache.get_rgb(input_color)
+    if rgb_cached:
+        return rgb_cached
+
     try:
         rgb = query_llm_for_rgb(input_color)
         if rgb:
+            cache.store_rgb(input_color, rgb)  # ✅ You forgot this line!
             return rgb
     except Exception as e:
         logger.error(f"[LLM FAILURE] '{input_color}' → {e}")
@@ -117,7 +123,6 @@ def get_rgb_from_descriptive_color_llm_first(input_color: str) -> Optional[Tuple
 
     return None
 
-
 def rgb_distance(rgb1: Tuple[int, int, int], rgb2: Tuple[int, int, int]) -> float:
     """
     Computes the Euclidean distance between two RGB color tuples.
@@ -149,3 +154,5 @@ def is_within_rgb_margin(
         bool: True if the test color is within the margin.
     """
     return rgb_distance(base_rgb, test_rgb) <= threshold
+
+
