@@ -55,6 +55,9 @@ from typing import List, Set, Tuple
 
 import spacy
 
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound
+from Chatbot.extractors.color.utils.token_utils import singularize, split_glued_tokens
+
 
 def extract_compound_phrases(
     tokens: List[spacy.tokens.Token],
@@ -113,8 +116,8 @@ def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, kno
         raw_mod = tokens[i].text.lower()
         raw_tone = singularize(tokens[i + 1].text.lower())
 
-        mod = resolve_modifier_with_suffix_fallback(raw_mod, known_modifiers)
-        tone = resolve_modifier_with_suffix_fallback(raw_tone, known_modifiers, known_tones, allow_fuzzy=False, is_tone=True)
+        mod = resolve_modifier_token(raw_mod, known_modifiers)
+        tone = resolve_modifier_token(raw_tone, known_modifiers, known_tones, allow_fuzzy=False, is_tone=True)
 
         if mod and tone and (tone in known_tones or tone in all_webcolor_names):
             if should_suppress_compound(raw_mod, mod, tone, known_tones):
@@ -167,7 +170,7 @@ def extract_from_split(
         parts2 = split_glued_tokens(t2, known_color_tokens)
 
         for mod_candidate in parts1:
-            mod = resolve_modifier_with_suffix_fallback(mod_candidate, known_modifiers)
+            mod = resolve_modifier_token(mod_candidate, known_modifiers)
             for tone_candidate in parts2:
                 if tone_candidate in known_tones or tone_candidate in all_webcolor_names:
                     if should_suppress_compound(mod_candidate, mod, tone_candidate, known_tones):

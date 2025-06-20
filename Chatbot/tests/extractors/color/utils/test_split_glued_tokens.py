@@ -1,8 +1,6 @@
 # tests/extractors/general/helpers/test_split_glued_tokens.py
 
 import unittest
-
-from Chatbot.extractors.color.shared.vocab import known_tones
 from Chatbot.extractors.color.utils.token_utils import split_glued_tokens
 from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
 

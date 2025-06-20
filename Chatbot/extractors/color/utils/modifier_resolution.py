@@ -134,3 +134,16 @@ def _is_y_suffix_from_tone(word: str, known_tones: Optional[Set[str]]) -> bool:
         base = word[:-1]
         return base in known_tones
     return False
+
+
+def should_suppress_compound(
+    raw_modifier: str,
+    resolved_modifier: Optional[str],
+    resolved_tone: Optional[str],
+    known_tones: Set[str]
+) -> bool:
+    return (
+        raw_modifier.endswith("y") and
+        resolved_modifier in known_tones and
+        resolved_tone is None
+    )
