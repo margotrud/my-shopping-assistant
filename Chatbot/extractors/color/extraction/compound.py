@@ -92,7 +92,16 @@ def extract_compound_phrases(
         >>> extract_compound_phrases(tokens, tones, modifiers, webcolors, False)
         ({"soft pink", "muted rose"}, ["soft pink", "muted rose"])
     """
+    compounds = set()
+    raw_compounds = []
+    known_color_tokens = known_modifiers | known_tones | all_webcolor_names
+    token_texts = [t.text.lower() for t in tokens]
 
+    extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, all_webcolor_names, debug)
+    extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
+    extract_from_glued(tokens, compounds, raw_compounds, token_texts, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
+
+    return compounds, raw_compounds
 
 def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, all_webcolor_names, debug):
     """
@@ -171,14 +180,30 @@ def extract_from_split(
 
         for mod_candidate in parts1:
             mod = resolve_modifier_token(mod_candidate, known_modifiers)
+            if not mod:
+                continue  # ⛔ skip invalid modifiers
+
             for tone_candidate in parts2:
-                if tone_candidate in known_tones or tone_candidate in all_webcolor_names:
-                    if should_suppress_compound(mod_candidate, mod, tone_candidate, known_tones):
-                        if debug:
-                            print(f"[⛔ SUPPRESSED FALLBACK] {mod} {tone_candidate}")
-                        continue
-                    compound = f"{mod} {tone_candidate}"
-                    compounds.add(compound)
-                    raw_compounds.append(compound)
+                if debug:
+                    print(f"[🔍 TONE CHECK] tone_candidate='{tone_candidate}'")
+
+                # ✅ Allow only exact tones
+                is_exact_tone = tone_candidate in known_tones
+                is_exact_webcolor = tone_candidate in all_webcolor_names
+                if not (is_exact_tone or is_exact_webcolor):
                     if debug:
-                        print(f"[✅ COMPOUND DETECTED] → '{compound}'")
+                        print(f"⛔ Rejected: tone_candidate='{tone_candidate}' is not valid tone/webcolor")
+                    continue
+
+                # 🚫 Fuzzy logic for tone_candidate should NEVER happen here
+
+                if should_suppress_compound(mod_candidate, mod, tone_candidate, known_tones):
+                    if debug:
+                        print(f"[⛔ SUPPRESSED FALLBACK] {mod} {tone_candidate}")
+                    continue
+
+                compound = f"{mod} {tone_candidate}"
+                compounds.add(compound)
+                raw_compounds.append(compound)
+                if debug:
+                    print(f"[✅ COMPOUND DETECTED] → '{compound}'")
