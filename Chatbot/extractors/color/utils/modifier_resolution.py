@@ -29,6 +29,60 @@ from typing import Optional, Set, Union
 from rapidfuzz import fuzz
 
 
+def _is_known_tone(raw: str, known_tones: Optional[Set[str]]) -> bool:
+    return known_tones is not None and raw in known_tones
+
+def _match_direct_modifier(raw: str, known_modifiers: Set[str]) -> Optional[str]:
+    if raw in known_modifiers:
+        print(f"[✅ DIRECT MATCH] '{raw}' found in modifiers")
+        return raw
+    return None
+
+def _match_suffix_fallback(raw: str, known_modifiers: Set[str], known_tones: Optional[Set[str]], allow_fuzzy: bool, is_tone: bool) -> Optional[str]:
+    for suffix in ["y", "ish"]:
+        if raw.endswith(suffix):
+            base = raw[:-len(suffix)]
+            cleaned_base = base.rstrip("-").strip()
+            if len(cleaned_base) < 3 or not cleaned_base.isalpha():
+                print(f"[⛔ INVALID BASE] '{raw}' → '{base}' (too short or non-alpha)")
+                continue
+
+            if cleaned_base in known_modifiers:
+                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{cleaned_base}' in modifiers")
+                return cleaned_base
+
+            if is_tone and known_tones and cleaned_base in known_tones:
+                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{cleaned_base}' in tones")
+                return cleaned_base
+
+            if allow_fuzzy and not is_tone:
+                if known_tones and cleaned_base in known_tones:
+                    print(f"[⛔ BLOCKED FUZZY BASE] '{cleaned_base}' is a tone — skip")
+                    continue
+                match = fuzzy_match_modifier(cleaned_base, known_modifiers)
+                if match:
+                    print(f"[✨ FUZZY ON BASE] '{cleaned_base}' → '{match}'")
+                    return match
+    return None
+
+def _fuzzy_match_modifier_safe(raw: str, known_modifiers: Set[str], known_tones: Optional[Set[str]]) -> Optional[str]:
+    if _is_known_tone(raw, known_tones):
+        print(f"[⛔ SKIP FUZZY] '{raw}' is in known tones — skip fuzzy match")
+        return None
+    match = fuzzy_match_modifier(raw, known_modifiers)
+    if match:
+        print(f"[✨ FUZZY MODIFIER MATCH] '{raw}' → '{match}'")
+        return match
+    return None
+
+def _fuzzy_match_tone(raw: str, known_tones: Optional[Set[str]]) -> Optional[str]:
+    if known_tones:
+        match = fuzzy_match_modifier(raw, known_tones, threshold=60)
+        if match:
+            print(f"[✨ FUZZY TONE MATCH] '{raw}' → '{match}'")
+            return match
+    return None
+
 def resolve_modifier_token(
     word: str,
     known_modifiers: Set[str],
@@ -39,49 +93,44 @@ def resolve_modifier_token(
     raw = word.lower()
     print(f"[🔍 RESOLVE] Trying to resolve: '{raw}'")
 
-    if not is_tone and known_tones and raw in known_tones:
+    # ─── STRICT TONE MODE ──────────────────────
+    if is_tone and not allow_fuzzy:
+        if _is_known_tone(raw, known_tones):
+            print(f"[🎯 STRICT TONE MATCH] '{raw}' accepted as tone")
+            return raw
+        print(f"[❌ STRICT TONE REJECTED] '{raw}' is not a valid tone")
+        return None
+
+    # ─── BLOCK TONE USED AS MODIFIER ───────────
+    if not is_tone and _is_known_tone(raw, known_tones):
         print(f"[⛔ ABORT] '{raw}' is a tone, not a modifier")
         return None
 
-    if raw in known_modifiers:
-        print(f"[✅ DIRECT MATCH] '{raw}' found in modifiers")
-        return raw
+    # ─── DIRECT MATCH ──────────────────────────
+    direct = _match_direct_modifier(raw, known_modifiers)
+    if direct:
+        return direct
 
-    for suffix in ["y", "ish"]:
-        if raw.endswith(suffix):
-            base = raw[:-len(suffix)]
-            cleaned_base = base.rstrip("-").strip()
-            if len(cleaned_base) < 3 or not cleaned_base.isalpha():
-                print(f"[⛔ INVALID BASE] '{raw}' → '{base}' (too short or non-alpha)")
-                continue
+    # ─── SUFFIX FALLBACK ───────────────────────
+    suffix_match = _match_suffix_fallback(raw, known_modifiers, known_tones, allow_fuzzy, is_tone)
+    if suffix_match:
+        return suffix_match
 
-            if base in known_modifiers:
-                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{base}' in modifiers")
-                return base
-            if is_tone and known_tones and base in known_tones:
-                print(f"[🔁 SUFFIX '{suffix}'] '{raw}' → '{base}' in tones")
-                return base
-            if allow_fuzzy and not is_tone:
-                match = fuzzy_match_modifier(base, known_modifiers)
-                if match:
-                    print(f"[✨ FUZZY ON BASE] '{base}' → '{match}'")
-                    return match
-
+    # ─── FUZZY MODIFIER (GUARDED) ───────────────
     if allow_fuzzy and not is_tone:
-        match = fuzzy_match_modifier(raw, known_modifiers)
-        if match:
-            print(f"[✨ FUZZY MODIFIER MATCH] '{raw}' → '{match}'")
-            return match
+        fuzzy_mod = _fuzzy_match_modifier_safe(raw, known_modifiers, known_tones)
+        if fuzzy_mod:
+            return fuzzy_mod
 
-    if is_tone and allow_fuzzy and known_tones:
-        match = fuzzy_match_modifier(raw, known_tones, threshold=60)
-        if match:
-            print(f"[✨ FUZZY TONE MATCH] '{raw}' → '{match}'")
-            return match
+    # ─── FUZZY TONE (ONLY IF TONE MODE) ────────
+    if is_tone and allow_fuzzy:
+        fuzzy_tone = _fuzzy_match_tone(raw, known_tones)
+        if fuzzy_tone:
+            return fuzzy_tone
 
+    # ─── FINAL FALLBACK ────────────────────────
     print(f"[❌ UNRESOLVED] '{raw}' could not be matched")
     return None
-
 
 
 def fuzzy_match_modifier(token: str, target: Union[str, Set[str]], threshold: int = 75):

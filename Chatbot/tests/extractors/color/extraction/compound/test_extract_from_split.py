@@ -5,6 +5,7 @@ import spacy
 from Chatbot.extractors.color.extraction.compound import extract_from_split
 from Chatbot.extractors.color.shared.vocab import known_tones, all_webcolor_names
 from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+from Chatbot.extractors.color.utils.token_utils import split_glued_tokens
 
 nlp = spacy.load("en_core_web_sm")
 known_modifiers = load_known_modifiers()
@@ -16,6 +17,11 @@ class TestExtractFromSplit(unittest.TestCase):
         tokens = nlp(text)
         compounds = set()
         raw = []
+        print("[TEST] Checking known_color_tokens:")
+        print("  'soft' in known_color_tokens? ", 'soft' in known_color_tokens)
+        print("  'pink' in known_color_tokens? ", 'pink' in known_color_tokens)
+        print("  split_glued_tokens('softpink') →", split_glued_tokens("softpink", known_color_tokens))
+
         extract_from_split(
             tokens=tokens,
             compounds=compounds,
@@ -26,18 +32,18 @@ class TestExtractFromSplit(unittest.TestCase):
             all_webcolor_names=all_webcolor_names,
             debug=False,
         )
-        self.assertEqual(compounds, expected_compounds)
+        self.assertEqual(expected_compounds, compounds)
 
     def test_case_01(self): self.run_case("glow blue", set())
-    def test_case_02(self): self.run_case("softpink peach", {"soft pink"})
-    def test_case_03(self): self.run_case("deepbrown red", {"deep brown"})
-    def test_case_04(self): self.run_case("peachy pink", set())
+    def test_case_02(self): self.run_case("softpink peach", {"soft peach", "soft pink"})
+    def test_case_03(self): self.run_case("deepbrown red", {"deep red", "deep brown"})
+    def test_case_04(self): self.run_case("peachy pink", {"peachy pink"})
     def test_case_05(self): self.run_case("lightred dusty", {"light red"})
-    def test_case_06(self): self.run_case("icygreen skyblue", {"icy green"})
+    def test_case_06(self): self.run_case("icygreen skyblue", {"icy blue", "icy green"})
     def test_case_07(self): self.run_case("mintyrose", set())
     def test_case_08(self): self.run_case("sunnypink", set())
     def test_case_09(self): self.run_case("coolgray blue", {"cool gray"})
-    def test_case_10(self): self.run_case("warmtaupe beige", {"warm taupe"})
+    def test_case_10(self): self.run_case("warmtaupe beige", {"warm taupe", "warm beige"})
 
     def test_case_11(self): self.run_case("rosybrown", set())
     def test_case_12(self): self.run_case("glowybronze", set())

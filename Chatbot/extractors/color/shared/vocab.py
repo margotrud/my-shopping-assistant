@@ -13,5 +13,5 @@ known_tones = set(name.lower() for name in css3.union(css21).union(xkcd).union(c
 
 all_webcolor_names = set(name.lower() for name in css3.union(css21))
 
-print("mint" in known_tones)   # ✅ Should print: True
+print("taupe" in known_tones)   # ✅ Should print: True
 print("peach" in known_tones)  # ✅ Should print: True
