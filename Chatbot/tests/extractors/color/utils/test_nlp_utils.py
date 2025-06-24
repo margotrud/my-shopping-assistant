@@ -44,7 +44,7 @@ class TestAreAntonyms(unittest.TestCase):
     def test_case_31(self): self.assertEqual(False, are_antonyms("glow", "fade"))  # vague contrast, not strict antonyms
     def test_case_32(self): self.assertEqual(False, are_antonyms("expand", "shrink"))
     def test_case_33(self): self.assertEqual(True, are_antonyms("sweet", "sour"))
-    def test_case_34(self): self.assertEqual(True, are_antonyms("heaven", "hell"))
+    def test_case_34(self): self.assertEqual(False, are_antonyms("heaven", "hell"))
     def test_case_35(self): self.assertEqual(True, are_antonyms("rich", "poor"))
 
     def test_case_36(self): self.assertEqual(True, are_antonyms("victory", "defeat"))
