@@ -19,6 +19,7 @@ Features:
 """
 
 from typing import List, Set
+import re
 from fuzzywuzzy import fuzz
 from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
 
@@ -151,24 +152,39 @@ def is_modifier_compound_conflict(expression: str, modifier_tokens: Set[str]) ->
 
 def remove_subsumed_matches(matches: List[str]) -> List[str]:
     """
-    Removes overlapping short matches when longer ones exist.
-
-    E.g., from ['glamorous', 'glam'], keep only 'glamorous'.
+    Removes redundant short matches that are:
+    - Prefixes of longer tokens (e.g., 'glam' vs 'glamorous')
+    - Full-word components inside longer multi-word expressions (e.g., 'glam' in 'soft glam')
 
     Args:
-        matches (List[str]): List of matched tokens.
+        matches (List[str]): List of matched phrases.
 
     Returns:
-        List[str]: Filtered list with minimal redundancy.
+        List[str]: Filtered list with minimal semantic redundancy.
     """
     filtered = []
     matches = sorted(matches, key=len, reverse=True)
-    for m in matches:
-        if not any(m in other and m != other for other in filtered):
-            filtered.append(m)
+
+    for candidate in matches:
+        is_subsumed = False
+        for existing in filtered:
+            if candidate == existing:
+                continue
+
+            # Case 1: strict prefix in a single-word token (e.g., glam → glamorous)
+            if " " not in existing and existing.startswith(candidate):
+                is_subsumed = True
+                break
+
+            # Case 2: full-word contained in a multi-word expression (e.g., glam in soft glam)
+            if re.search(rf'\b{re.escape(candidate)}\b', existing):
+                is_subsumed = True
+                break
+
+        if not is_subsumed:
+            filtered.append(candidate)
+
     return filtered
-
-
 def is_negation_conflict(a: str, b: str) -> bool:
     a = a.strip().lower()
     b = b.strip().lower()
