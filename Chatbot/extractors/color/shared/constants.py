@@ -23,3 +23,8 @@ EXPRESSION_SUPPRESSION_RULES = {
     "bold": {"subtle", "neutral"},
     # Extend as needed
 }
+
+SEMANTIC_CONFLICTS = {
+    frozenset({"white", "offwhite"}),
+    frozenset({"cool", "coal"}),
+}

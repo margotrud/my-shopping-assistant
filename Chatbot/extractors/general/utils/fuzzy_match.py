@@ -19,7 +19,9 @@ Features:
 """
 
 from typing import List, Set
-from rapidfuzz import fuzz
+from fuzzywuzzy import fuzz
+from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
+
 
 
 def normalize_token(token: str) -> str:
@@ -36,19 +38,20 @@ def normalize_token(token: str) -> str:
 
 
 def fuzzy_token_match(a: str, b: str) -> float:
-    """
-    Computes fuzzy partial match score between two tokens.
+    a = normalize_token(a)
+    b = normalize_token(b)
 
-    Args:
-        a (str): First string.
-        b (str): Second string.
+    if a == b:
+        return 100
 
-    Returns:
-        float: Fuzzy match score (0–100).
-    """
-    return fuzz.partial_ratio(normalize_token(a), normalize_token(b))
+    if frozenset({a, b}) in SEMANTIC_CONFLICTS:
+        return 60  # hard semantic block
 
+    partial = fuzz.partial_ratio(a, b)
+    ratio = fuzz.ratio(a, b)
+    bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
 
+    return min(100, round((partial + ratio) / 2 + bonus))
 def match_expression_aliases(input_text: str, aliases: List[str], threshold: int = 85) -> bool:
     """
     Determines if user input fuzzily matches any known expression alias.
