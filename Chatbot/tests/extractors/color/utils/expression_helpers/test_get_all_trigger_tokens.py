@@ -1,60 +1,41 @@
-# tests/helpers/test_get_all_trigger_tokens.py
+# Chatbot/tests/extractors/color/logic/test_get_all_trigger_tokens.py
 
 import unittest
+from Chatbot.extractors.color.utils.config_loader import load_json_from_data_dir
 from Chatbot.extractors.color.utils.expression_helpers import get_all_trigger_tokens
 
+
+# Load the expression JSON once at module level
+expression_map = load_json_from_data_dir("expression_definition.json")
+all_results = get_all_trigger_tokens()
+
+# Limit to first 50 expressions or fewer if less exist
+test_expressions = list(expression_map.keys())[:50]
+
+
 class TestGetAllTriggerTokens(unittest.TestCase):
+    def run_case(self, expression):
+        expected_tokens = set(
+            expression_map[expression].get("modifiers", []) +
+            expression_map[expression].get("aliases", [])
+        )
+        actual_tokens = set(all_results.get(expression, []))
+        self.assertEqual(
+            expected_tokens,
+            actual_tokens,
+            f"Mismatch for '{expression}'\nExpected: {expected_tokens}\nActual:   {actual_tokens}"
+        )
 
-    def test_case_01(self): self.assertEqual(get_all_trigger_tokens({"daytime": ["casual", "everyday", "light makeup"]}), {"casual", "everyday", "light", "makeup"})
-    def test_case_02(self): self.assertEqual(get_all_trigger_tokens({"edgy": ["bold", "dark tones", "glossy finish"]}), {"bold", "dark", "tones", "glossy", "finish"})
-    def test_case_03(self): self.assertEqual(get_all_trigger_tokens({"romantic": ["rosy", "pink", "soft cheeks"]}), {"rosy", "pink", "soft", "cheeks"})
-    def test_case_04(self): self.assertEqual(get_all_trigger_tokens({"vibrant": ["bright", "neon", "colorful lips"]}), {"bright", "neon", "colorful", "lips"})
-    def test_case_05(self): self.assertEqual(get_all_trigger_tokens({"natural": ["bare skin", "clean look"]}), {"bare", "skin", "clean", "look"})
-    def test_case_06(self): self.assertEqual(get_all_trigger_tokens({"night": ["smoky", "bold eyes", "dark lip"]}), {"smoky", "bold", "eyes", "dark", "lip"})
-    def test_case_07(self): self.assertEqual(get_all_trigger_tokens({"artsy": ["creative makeup", "color splash"]}), {"creative", "makeup", "color", "splash"})
-    def test_case_08(self): self.assertEqual(get_all_trigger_tokens({"minimal": ["bare", "neutral tones", "light finish"]}), {"bare", "neutral", "tones", "light", "finish"})
-    def test_case_09(self): self.assertEqual(get_all_trigger_tokens({"formal": ["classic red", "subtle highlight"]}), {"classic", "red", "subtle", "highlight"})
-    def test_case_10(self): self.assertEqual(get_all_trigger_tokens({"earthy": ["warm brown", "terracotta"]}), {"warm", "brown", "terracotta"})
-    def test_case_11(self): self.assertEqual(get_all_trigger_tokens({"daytime": ["casual", "everyday", "light makeup"]}), {"casual", "everyday", "light", "makeup"})
-    def test_case_12(self): self.assertEqual(get_all_trigger_tokens({"edgy": ["bold", "dark tones", "glossy finish"]}), {"bold", "dark", "tones", "glossy", "finish"})
-    def test_case_13(self): self.assertEqual(get_all_trigger_tokens({"romantic": ["rosy", "pink", "soft cheeks"]}), {"rosy", "pink", "soft", "cheeks"})
-    def test_case_14(self): self.assertEqual(get_all_trigger_tokens({"vibrant": ["bright", "neon", "colorful lips"]}), {"bright", "neon", "colorful", "lips"})
-    def test_case_15(self): self.assertEqual(get_all_trigger_tokens({"natural": ["bare skin", "clean look"]}), {"bare", "skin", "clean", "look"})
-    def test_case_16(self): self.assertEqual(get_all_trigger_tokens({"night": ["smoky", "bold eyes", "dark lip"]}), {"smoky", "bold", "eyes", "dark", "lip"})
-    def test_case_17(self): self.assertEqual(get_all_trigger_tokens({"artsy": ["creative makeup", "color splash"]}), {"creative", "makeup", "color", "splash"})
-    def test_case_18(self): self.assertEqual(get_all_trigger_tokens({"minimal": ["bare", "neutral tones", "light finish"]}), {"bare", "neutral", "tones", "light", "finish"})
-    def test_case_19(self): self.assertEqual(get_all_trigger_tokens({"formal": ["classic red", "subtle highlight"]}), {"classic", "red", "subtle", "highlight"})
-    def test_case_20(self): self.assertEqual(get_all_trigger_tokens({"earthy": ["warm brown", "terracotta"]}), {"warm", "brown", "terracotta"})
-    def test_case_21(self): self.assertEqual(get_all_trigger_tokens({"daytime": ["casual", "everyday", "light makeup"]}), {"casual", "everyday", "light", "makeup"})
-    def test_case_22(self): self.assertEqual(get_all_trigger_tokens({"edgy": ["bold", "dark tones", "glossy finish"]}), {"bold", "dark", "tones", "glossy", "finish"})
-    def test_case_23(self): self.assertEqual(get_all_trigger_tokens({"romantic": ["rosy", "pink", "soft cheeks"]}), {"rosy", "pink", "soft", "cheeks"})
-    def test_case_24(self): self.assertEqual(get_all_trigger_tokens({"vibrant": ["bright", "neon", "colorful lips"]}), {"bright", "neon", "colorful", "lips"})
-    def test_case_25(self): self.assertEqual(get_all_trigger_tokens({"natural": ["bare skin", "clean look"]}), {"bare", "skin", "clean", "look"})
-    def test_case_26(self): self.assertEqual(get_all_trigger_tokens({"night": ["smoky", "bold eyes", "dark lip"]}), {"smoky", "bold", "eyes", "dark", "lip"})
-    def test_case_27(self): self.assertEqual(get_all_trigger_tokens({"artsy": ["creative makeup", "color splash"]}), {"creative", "makeup", "color", "splash"})
-    def test_case_28(self): self.assertEqual(get_all_trigger_tokens({"minimal": ["bare", "neutral tones", "light finish"]}), {"bare", "neutral", "tones", "light", "finish"})
-    def test_case_29(self): self.assertEqual(get_all_trigger_tokens({"formal": ["classic red", "subtle highlight"]}), {"classic", "red", "subtle", "highlight"})
-    def test_case_30(self): self.assertEqual(get_all_trigger_tokens({"earthy": ["warm brown", "terracotta"]}), {"warm", "brown", "terracotta"})
-    def test_case_31(self): self.assertEqual(get_all_trigger_tokens({"daytime": ["casual", "everyday", "light makeup"]}), {"casual", "everyday", "light", "makeup"})
-    def test_case_32(self): self.assertEqual(get_all_trigger_tokens({"edgy": ["bold", "dark tones", "glossy finish"]}), {"bold", "dark", "tones", "glossy", "finish"})
-    def test_case_33(self): self.assertEqual(get_all_trigger_tokens({"romantic": ["rosy", "pink", "soft cheeks"]}), {"rosy", "pink", "soft", "cheeks"})
-    def test_case_34(self): self.assertEqual(get_all_trigger_tokens({"vibrant": ["bright", "neon", "colorful lips"]}), {"bright", "neon", "colorful", "lips"})
-    def test_case_35(self): self.assertEqual(get_all_trigger_tokens({"natural": ["bare skin", "clean look"]}), {"bare", "skin", "clean", "look"})
-    def test_case_36(self): self.assertEqual(get_all_trigger_tokens({"night": ["smoky", "bold eyes", "dark lip"]}), {"smoky", "bold", "eyes", "dark", "lip"})
-    def test_case_37(self): self.assertEqual(get_all_trigger_tokens({"artsy": ["creative makeup", "color splash"]}), {"creative", "makeup", "color", "splash"})
-    def test_case_38(self): self.assertEqual(get_all_trigger_tokens({"minimal": ["bare", "neutral tones", "light finish"]}), {"bare", "neutral", "tones", "light", "finish"})
-    def test_case_39(self): self.assertEqual(get_all_trigger_tokens({"formal": ["classic red", "subtle highlight"]}), {"classic", "red", "subtle", "highlight"})
-    def test_case_40(self): self.assertEqual(get_all_trigger_tokens({"earthy": ["warm brown", "terracotta"]}), {"warm", "brown", "terracotta"})
-    def test_case_41(self): self.assertEqual(get_all_trigger_tokens({"daytime": ["casual", "everyday", "light makeup"], "custom": ["shade 41", "blend 41"]}), {"casual", "everyday", "light", "makeup", "shade", "41", "blend"})
-    def test_case_42(self): self.assertEqual(get_all_trigger_tokens({"edgy": ["bold", "dark tones", "glossy finish"], "custom": ["shade 42", "blend 42"]}), {"bold", "dark", "tones", "glossy", "finish", "shade", "42", "blend"})
-    def test_case_43(self): self.assertEqual(get_all_trigger_tokens({"romantic": ["rosy", "pink", "soft cheeks"], "custom": ["shade 43", "blend 43"]}), {"rosy", "pink", "soft", "cheeks", "shade", "43", "blend"})
-    def test_case_44(self): self.assertEqual(get_all_trigger_tokens({"vibrant": ["bright", "neon", "colorful lips"], "custom": ["shade 44", "blend 44"]}), {"bright", "neon", "colorful", "lips", "shade", "44", "blend"})
-    def test_case_45(self): self.assertEqual(get_all_trigger_tokens({"natural": ["bare skin", "clean look"], "custom": ["shade 45", "blend 45"]}), {"bare", "skin", "clean", "look", "shade", "45", "blend"})
-    def test_case_46(self): self.assertEqual(get_all_trigger_tokens({"night": ["smoky", "bold eyes", "dark lip"], "custom": ["shade 46", "blend 46"]}), {"smoky", "bold", "eyes", "dark", "lip", "shade", "46", "blend"})
-    def test_case_47(self): self.assertEqual(get_all_trigger_tokens({"artsy": ["creative makeup", "color splash"], "custom": ["shade 47", "blend 47"]}), {"creative", "makeup", "color", "splash", "shade", "47", "blend"})
-    def test_case_48(self): self.assertEqual(get_all_trigger_tokens({"minimal": ["bare", "neutral tones", "light finish"], "custom": ["shade 48", "blend 48"]}), {"bare", "neutral", "tones", "light", "finish", "shade", "48", "blend"})
-    def test_case_49(self): self.assertEqual(get_all_trigger_tokens({"formal": ["classic red", "subtle highlight"], "custom": ["shade 49", "blend 49"]}), {"classic", "red", "subtle", "highlight", "shade", "49", "blend"})
-    def test_case_50(self): self.assertEqual(get_all_trigger_tokens({"earthy": ["warm brown", "terracotta"], "custom": ["shade 50", "blend 50"]}), {"warm", "brown", "terracotta", "shade", "50", "blend"})
+# Dynamically add 50 test methods to the class
+def gen_test(expr):
+    def test(self):
+        self.run_case(expr)
+    return test
 
-if __name__ == '__main__':
+for i, expr in enumerate(test_expressions, 1):
+    test_name = f"test_case_{i:02d}"
+    setattr(TestGetAllTriggerTokens, test_name, gen_test(expr))
+
+
+if __name__ == "__main__":
     unittest.main()
