@@ -21,6 +21,7 @@ EXPRESSION_SUPPRESSION_RULES = {
     "edgy": {"romantic", "soft glam"},
     "evening": {"daytime"},
     "bold": {"subtle", "neutral"},
+    "soft glam": {"glamorous"},
     # Extend as needed
 }
 
