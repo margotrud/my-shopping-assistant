@@ -27,5 +27,6 @@ EXPRESSION_SUPPRESSION_RULES = {
 SEMANTIC_CONFLICTS = {
     frozenset({"white", "offwhite"}),
     frozenset({"cool", "coal"}),
-    frozenset({"soft glam", "soft glow"})
+    frozenset({"soft glam", "soft glow"}),
+    frozenset({"blurple", "pale"})
 }

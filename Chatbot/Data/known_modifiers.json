@@ -1,13 +1,13 @@
 [
-  "ashy", "bare", "barely-there","bold", "bold-toned", "bright", "bronzed", "brownish", "classic", "clean",
-  "cool", "cool-neutral", "cool-toned", "creamy", "dark", "deep", "dusty", "electric",
-  "fair", "flashy", "glittery", "glossy", "gold-flecked", "golden", "glowy",
+  "ashy", "bare", "barely-there","bold", "bold-toned", "blur", "bright", "bronzed", "brownish", "chalk","classic", "clean",
+  "cool", "cool-neutral", "cool-toned", "cream", "dark", "deep", "dust", "electric", "faint",
+  "fair", "flashy", "glittery", "gloss", "gold-flecked", "golden", "glowy",
   "icy", "intense", "ivory", "light", "luminous", "matte", "medium", "medium-dark",
   "medium-deep", "medium-light", "metallic", "muted", "natural", "neon", "neutral",
-  "neutral-cool", "neutral-toned", "neutral-warm", "off-white", "opaque", "pastel",
-  "peachy", "pearly", "pinkish", "pinky", "powdery", "radiant", "reddish", "rich",
-  "rich-toned", "rosé", "rosy", "satin", "seafoam", "shimmery", "shiny", "sheer",
-  "silky", "soft", "soft-focus", "sparkly", "subtle", "tan", "ultra deep", "ultra light",
+  "neutral-cool", "neutral-toned", "neutral-warm", "off-white", "opaque","pale", "pastel",
+  "peach", "pearly", "pinkish", "pinky", "powdery", "radiant", "reddish", "rich",
+  "rich-toned", "rosé", "rose", "sand","satin", "seafoam", "shade","shimmery", "shiny", "sheer",
+  "silk", "smoke","smooth","soft", "soft-focus", "sparkly", "subtle", "tan", "ultra deep", "ultra light", "velvet",
   "very dark", "very fair", "very light", "vibrant", "warm", "warm-neutral",
   "warm-toned"
 ]

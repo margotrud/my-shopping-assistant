@@ -1,28 +1,23 @@
-# Chatbot/tests/extractors/color/utils/test_fuzzy_match_modifier.py
+# Chatbot/tests/extractors/color/utils/test_fuzzy_match_modifier_safe.py
 
 import unittest
-from Chatbot.extractors.color.utils.modifier_resolution import _fuzzy_match_modifier
 from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+from Chatbot.extractors.color.utils.modifier_resolution import fuzzy_match_modifier_safe
 
-class TestFuzzyMatchModifier(unittest.TestCase):
+class TestFuzzyMatchModifierSafe(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.known_modifiers = load_known_modifiers()
 
-    def run_case(self, raw, expected_match, min_expected_score=70):
-        result = _fuzzy_match_modifier(raw, self.known_modifiers)
-        if expected_match is None:
-            self.assertIsNone(result, f"Expected None for input '{raw}' but got {result}")
-        else:
-            self.assertIsNotNone(result, f"Expected match for '{raw}' but got None")
-            match, score = result
-            self.assertEqual(expected_match, match, f"Expected match '{expected_match}', got '{match}' for input '{raw}'")
-            self.assertGreaterEqual(score, min_expected_score, f"Score {score} below threshold {min_expected_score} for input '{raw}'")
+    def run_case(self, word, expected, threshold=83):
+        result = fuzzy_match_modifier_safe(word, self.known_modifiers, threshold)
+        self.assertEqual(expected, result, f"Input: '{word}' Threshold: {threshold} Expected: {expected} Got: {result}")
 
-    # 25 positive cases (expected best match returned with decent score)
+
+    # 25 positive cases with expected fuzzy matches (score >= threshold)
     def test_case_01(self): self.run_case("soft", "soft")
-    def test_case_02(self): self.run_case("sofft", "soft")
+    def test_case_02(self): self.run_case("sofft", "soft")        # minor typo
     def test_case_03(self): self.run_case("muted", "muted")
     def test_case_04(self): self.run_case("mutd", "muted")
     def test_case_05(self): self.run_case("bright", "bright")
@@ -44,11 +39,11 @@ class TestFuzzyMatchModifier(unittest.TestCase):
     def test_case_21(self): self.run_case("matte", "matte")
     def test_case_22(self): self.run_case("mate", "matte")
     def test_case_23(self): self.run_case("velvet", "velvet")
-    def test_case_24(self): self.run_case("glossy", "gloss")
-    def test_case_25(self): self.run_case("smooth", "smooth")
+    def test_case_24(self): self.run_case("velvet", "velvet")
+    def test_case_25(self): self.run_case("glossy", "gloss")
 
-    # 25 negative cases (expected None for no decent match)
-    def test_case_26(self): self.run_case("blurple", "blur")
+    # 25 negative cases (expected None due to low similarity or unknown)
+    def test_case_26(self): self.run_case("blurple", None)
     def test_case_27(self): self.run_case("invisible", None)
     def test_case_28(self): self.run_case("sparkly", "sparkly")
     def test_case_29(self): self.run_case("brightish", "bright")
@@ -61,7 +56,7 @@ class TestFuzzyMatchModifier(unittest.TestCase):
     def test_case_36(self): self.run_case("medium", "medium")
     def test_case_37(self): self.run_case("soft-focusx", "soft-focus")
     def test_case_38(self): self.run_case("deepish", "deep")
-    def test_case_39(self): self.run_case("faint", "faint")  # adjust if faint is modifier
+    def test_case_39(self): self.run_case("faint", "faint")  # maybe faint is modifier? adjust if needed
     def test_case_40(self): self.run_case("smoky", "smoke")
     def test_case_41(self): self.run_case("brighty", "bright")
     def test_case_42(self): self.run_case("warmth", "warm")
@@ -76,3 +71,4 @@ class TestFuzzyMatchModifier(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

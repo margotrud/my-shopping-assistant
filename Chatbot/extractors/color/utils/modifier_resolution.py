@@ -22,12 +22,17 @@ def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
     for suffix in ("y", "ish"):
         if lowered.endswith(suffix):
             base = lowered[:-len(suffix)].rstrip("-").strip()
-            if len(base) >= 3 and base.isalpha() and base in known_modifiers:
-                return base
+            if len(base) >= 3 and base.isalpha():
+                if base in known_modifiers:
+                    return base
+                # New rule: if base + 'e' is known, return that
+                if base + "e" in known_modifiers:
+                    return base + "e"
     return None
 
 
-def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 83) -> str | None:
+
+def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 75) -> str | None:
     raw = word.lower()
     best = _fuzzy_match_modifier(raw, known_modifiers)
     if best and best[1] >= threshold:
@@ -35,15 +40,23 @@ def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 
     return None
 
 
-def _fuzzy_match_modifier(raw: str, known_modifiers: set) -> tuple[str, float] | None:
+def _fuzzy_match_modifier(raw: str, known_modifiers: set, threshold: float = 80, debug: bool = True) -> tuple[str, float] | None:
     best_score = 0
     best_match = None
     for candidate in known_modifiers:
         score = fuzzy_token_match(raw, candidate)
+        print(f"Checking '{candidate}': score={score}")  # debug
         if score > best_score:
             best_score = score
             best_match = candidate
-    return (best_match, best_score) if best_match else None
+    if best_match and best_score >= threshold:
+        if debug:
+            print(f"[DEBUG] Best match: '{best_match}' with score {best_score}")
+        return best_match, best_score
+
+    if debug:
+        print("[DEBUG] No suitable match found (below threshold)")
+    return None
 
 
 def resolve_modifier_token(word: str, known_modifiers: set, known_tones: set, allow_fuzzy=True, is_tone=False, debug=False) -> str | None:
