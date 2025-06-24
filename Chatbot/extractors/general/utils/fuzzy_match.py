@@ -1,235 +1,162 @@
-#Chatbot/extractors/general/utils/fuzzy_match.py
+# Chatbot/extractors/general/utils/fuzzy_match.py
+
 """
-Fuzzy Match Utility
-===================
-Secure and extensible matching system for comparing user input to predefined aliases
-and expressions in a domain-aware context (e.g., cosmetics, fashion, color).
+fuzzy_match.py
+==============
 
-Supports:
----------
-- Normalization using WordNet + spaCy + heuristics
-- Secure fuzzy string matching (with exact/prefix/multi-word logic)
-- Blocklist enforcement to reject semantic overlaps
-- Expression alias detection with multi-word heuristics
+Generic fuzzy token matcher with blocklist, prefix, and multi-word logic.
 
-Used for:
+Designed for reuse across multiple domains (e.g., colors, brands, products).
+Wraps common secure fuzzy matching behaviors into a single configurable function.
+
+Features:
 ---------
-- Matching free-text to aesthetic expressions (e.g., "soft glam", "edgy", "natural")
-- Avoiding false-positive matches from ambiguous or embedded aliases
+- Exact match
+- Safe prefix match (single-word only)
+- Multi-word trigger matching
+- Fuzzy string ratio fallback
+- Optional semantic blocklist filtering
 """
 
-from typing import Set, Tuple, Optional, Dict, List
-from nltk.stem import WordNetLemmatizer
-import spacy
-from fuzzywuzzy import fuzz
-from rapidfuzz import fuzz as rapidfuzz_fuzz
-from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+from typing import List, Set
+from rapidfuzz import fuzz
 
-# Load global models
-wnl = WordNetLemmatizer()
-nlp = spacy.load("en_core_web_sm")
 
 def normalize_token(token: str) -> str:
     """
-       Normalize a word using suffix removal, WordNet lemmatization, and spaCy lemmatization.
-
-       Args:
-           token (str): Raw input string.
-
-       Returns:
-           str: Normalized token.
-       """
-    original = token
-    token = token.lower().strip()
-
-    # Rule 1: Strip suffix like "-ness"
-    for suffix in ["ness"]:
-        if token.endswith(suffix) and len(token) > len(suffix) + 2:
-            return token[:-len(suffix)]
-
-    # Rule 2: WordNet lemmatization
-    for pos in ['a', 'n']:
-        lemma = wnl.lemmatize(token, pos=pos)
-        if lemma != token:
-            return lemma
-
-    # Rule 3: spaCy lemmatization
-    if " " not in token:
-        doc = nlp(token)
-        if doc and doc[0].lemma_ != token:
-            return doc[0].lemma_.lower()
-
-    return token
-
-def fuzzy_token_match(
-        token: str,
-        target: str,
-        *,
-        blocklist: Optional[Set[Tuple[str, str]]] = None,
-        threshold: int = 75,
-        allow_prefix: bool = True,
-        allow_multiword: bool = True
-) -> bool:
-    """
-       General-purpose fuzzy matcher between a token and a target string.
-
-       Args:
-           token (str): User-provided input string.
-           target (str): Known label to compare against.
-           blocklist (Optional[Set[Tuple[str, str]]]): Set of blocked token-target pairs.
-           threshold (int): Fuzzy score threshold.
-           allow_prefix (bool): If True, allows prefix match (1-word only).
-           allow_multiword (bool): If True, allows multi-word partwise matching.
-
-       Returns:
-           bool: True if match passes, else False.
-       """
-    token = normalize_token(token)
-    target = normalize_token(target)
-    pair = (token, target)
-    reverse = (target, token)
-
-    if blocklist and (pair in blocklist or reverse in blocklist):
-        return False
-    if token == target:
-        return True
-    if allow_prefix and " " not in token and " " not in target and target.startswith(token):
-        return True
-    if " " in target and allow_multiword:
-        token_parts = token.split()
-        target_parts = target.split()
-        if len(token_parts) != len(target_parts):
-            return False
-        return all(rapidfuzz_fuzz.ratio(a, b) >= threshold for a, b in zip(token_parts, target_parts))
-    if " " not in token and " " not in target:
-        return rapidfuzz_fuzz.ratio(token, target) >= threshold
-    return False
-
-
-def match_expression_aliases(
-    text: str,
-    expression_definition: Dict[str, Dict[str, list]],
-    threshold: int = 85
-) -> Set[str]:
-    """
-    Matches a user text against expression aliases with fuzzy logic.
+    Standardizes token for comparison: lowercase and strip whitespace.
 
     Args:
-        text (str): Input text (e.g., "barely there glam and red carpet").
-        expression_definition (Dict): Expression → {"aliases": [...], "modifiers": [...]}
-        threshold (int): Minimum fuzzy score to accept alias match.
+        token (str): Input string.
 
     Returns:
-        Set[str]: Set of matched expression keys (e.g., {"soft glam", "natural"})
+        str: Normalized token.
     """
-    matches = set()
-    lowered = text.lower()
-    input_tokens = lowered.split()
-    known_modifiers = load_known_modifiers()
-
-    # Pre-check multi-word triggers
-    for expression, definition in expression_definition.items():
-        for alias in definition.get("aliases", []):
-            if " " in alias and fuzz.token_sort_ratio(alias.lower(), lowered) >= threshold:
-                matches.add(expression)
-                break
-
-    for expression, definition in expression_definition.items():
-        for alias in definition.get("aliases", []):
-            alias_lower = alias.lower()
-            if is_exact_match(alias_lower, lowered):
-                matches.add(expression)
-                continue
-
-            score = fuzz.partial_ratio(alias_lower, lowered)
-            if is_strong_fuzzy_match(score, threshold):
-                if is_embedded_alias_conflict(alias_lower, definition["aliases"], lowered, score):
-                    continue
-                if is_modifier_compound_conflict(alias_lower, input_tokens, known_modifiers, expression_definition):
-                    continue
-                matches.add(expression)
-                continue
-
-            if should_accept_multiword_alias(alias_lower, alias_lower.split(), lowered):
-                matches.add(expression)
-
-    return remove_subsumed_matches(matches, expression_definition, text)
+    return token.lower().strip()
 
 
-def is_exact_match(alias: str, lowered_input: str) -> bool:
-    return alias == lowered_input
+def fuzzy_token_match(a: str, b: str) -> float:
+    """
+    Computes fuzzy partial match score between two tokens.
+
+    Args:
+        a (str): First string.
+        b (str): Second string.
+
+    Returns:
+        float: Fuzzy match score (0–100).
+    """
+    return fuzz.partial_ratio(normalize_token(a), normalize_token(b))
 
 
-def is_strong_fuzzy_match(score: int, threshold: int) -> bool:
-    return score >= threshold or threshold - 5 <= score < threshold
+def match_expression_aliases(input_text: str, aliases: List[str], threshold: int = 85) -> bool:
+    """
+    Determines if user input fuzzily matches any known expression alias.
 
+    Args:
+        input_text (str): Lowercased user input (e.g., "soft glam").
+        aliases (List[str]): Alias tokens for an expression.
+        threshold (int): Match threshold (default: 85).
 
-def is_embedded_alias_conflict(alias: str, aliases: List[str], lowered_input: str, score: int) -> bool:
-    if len(alias.split()) > 1:
-        return False
-    if alias in lowered_input:
-        for other in aliases:
-            if alias in other and alias != other and other in lowered_input and score < 88:
-                return True
-        if score < 88:
+    Returns:
+        bool: True if any alias matches, else False.
+    """
+    for alias in aliases:
+        score = fuzz.partial_ratio(alias.lower(), input_text.lower())
+        if score >= threshold:
             return True
     return False
 
 
-def is_modifier_compound_conflict(
-    alias: str,
-    input_tokens: List[str],
-    known_modifiers: Set[str],
-    expression_definition: Dict[str, Dict[str, list]]
-) -> bool:
+def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 85) -> bool:
     """
-    Prevents false-positive matching on modifier + tone (e.g., "soft pink")
-    when alias is a standalone tone also present as compound.
-    """
-    if alias not in input_tokens:
-        return False
-    idx = input_tokens.index(alias)
-    if idx == 0:
-        return False
+    Evaluates whether a multi-word alias should be accepted as a match based on fuzzy similarity.
 
-    prev_token = input_tokens[idx - 1]
-    compound = f"{prev_token} {alias}"
-
-    return (
-        prev_token in known_modifiers and
-        alias in known_modifiers and
-        not any(compound in d.get("aliases", []) for d in expression_definition.values())
-    )
-
-
-def should_accept_multiword_alias(alias: str, words: List[str], lowered_input: str) -> bool:
-    return len(words) > 1 and alias in lowered_input
-
-
-def remove_subsumed_matches(
-    matches: Set[str],
-    expression_definition: Dict[str, Dict[str, list]],
-    text: str
-) -> Set[str]:
-    """
-    Remove expressions matched via partial alias embedding
-    (e.g., remove "glamorous" if "soft glam" was matched).
+    Args:
+        alias (str): The multi-word alias (e.g., "work appropriate").
+        input_text (str): Lowercased user input text (e.g., "something more work appropriate").
+        threshold (int): Minimum fuzzy ratio required for match.
 
     Returns:
-        Set[str]: Filtered matches.
+        bool: True if match is confident, else False.
     """
-    lowered = text.lower()
-    alias_to_expr = {}
-    for expr in matches:
-        for alias in expression_definition[expr].get("aliases", []):
-            alias_lower = alias.lower()
-            score = fuzz.partial_ratio(alias_lower.replace(" ", ""), lowered.replace(" ", ""))
-            if score >= 85:
-                alias_to_expr[alias_lower] = expr
+    score = fuzz.partial_ratio(alias.lower(), input_text.lower())
+    return score >= threshold
 
-    final = set(matches)
-    for a, expr_a in alias_to_expr.items():
-        for b, expr_b in alias_to_expr.items():
-            if expr_a != expr_b and a in b and len(a) < len(b):
-                final.discard(expr_a)
-    return final
+
+def is_exact_match(a: str, b: str) -> bool:
+    """
+    Checks for normalized equality.
+
+    Args:
+        a (str): First token.
+        b (str): Second token.
+
+    Returns:
+        bool: True if equal after normalization.
+    """
+    return normalize_token(a) == normalize_token(b)
+
+
+def is_strong_fuzzy_match(a: str, b: str, threshold: int = 88) -> bool:
+    """
+    Returns True if a and b are strong fuzzy matches.
+
+    Args:
+        a (str): First token.
+        b (str): Second token.
+        threshold (int): Minimum score required.
+
+    Returns:
+        bool: True if fuzzy match is strong.
+    """
+    return fuzzy_token_match(a, b) >= threshold
+
+
+def is_embedded_alias_conflict(longer: str, shorter: str) -> bool:
+    """
+    Detects conflict where one alias is embedded in another (e.g., 'glamorous' vs 'glam').
+
+    Args:
+        longer (str): Full phrase matched.
+        shorter (str): Alias token.
+
+    Returns:
+        bool: True if alias is strictly embedded and not equal.
+    """
+    return shorter in longer and shorter != longer
+
+
+def is_modifier_compound_conflict(expression: str, modifier_tokens: Set[str]) -> bool:
+    """
+    Flags if an expression token conflicts with a known modifier,
+    e.g., 'natural' being interpreted both as an expression and a modifier.
+
+    Args:
+        expression (str): Candidate expression token.
+        modifier_tokens (Set[str]): Set of known modifiers.
+
+    Returns:
+        bool: True if conflict exists.
+    """
+    return expression in modifier_tokens
+
+
+def remove_subsumed_matches(matches: List[str]) -> List[str]:
+    """
+    Removes overlapping short matches when longer ones exist.
+
+    E.g., from ['glamorous', 'glam'], keep only 'glamorous'.
+
+    Args:
+        matches (List[str]): List of matched tokens.
+
+    Returns:
+        List[str]: Filtered list with minimal redundancy.
+    """
+    filtered = []
+    matches = sorted(matches, key=len, reverse=True)
+    for m in matches:
+        if not any(m in other and m != other for other in filtered):
+            filtered.append(m)
+    return filtered

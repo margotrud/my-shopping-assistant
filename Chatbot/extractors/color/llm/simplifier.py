@@ -1,145 +1,75 @@
 # Chatbot/extractors/color/llm/simplifier.py
 """
-Color Simplifier Module
------------------------
-Simplifies user-provided descriptive color phrases using an LLM via OpenRouter API.
-Maps non-standard inputs (e.g., 'blush', 'peachy') to normalized cosmetic color tones
-(e.g., 'soft pink', 'light peach').
+simplifier.py
+=============
 
-Includes:
-- Caching logic to avoid repeated LLM calls
-- Clear prompt construction
-- Validation of returned tones
+Handles simplification of descriptive color phrases using both rules and LLM.
+Also provides suffix fallback logic when direct match fails.
 """
 
-import os
-import json
-import requests
-import webcolors
-from typing import List
+from Chatbot.extractors.color.shared.vocab import known_tones
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token
 
-from matplotlib.colors import XKCD_COLORS
+def simplify_phrase_if_needed(phrase: str, known_modifiers, known_tones, debug=False) -> str:
+    if debug:
+        print(f"[🔍 SIMPLIFY] Checking phrase: '{phrase}'")
+    if is_valid_tone(phrase, known_tones):
+        if debug:
+            print(f"[✅ TONE KNOWN] '{phrase}' is a known tone")
+        return phrase
 
-from dotenv import load_dotenv
-load_dotenv()
+    fallback = extract_suffix_fallbacks(phrase, known_modifiers, known_tones, debug)
+    if fallback:
+        if debug:
+            print(f"[✅ FALLBACK MATCH] Using suffix fallback: '{fallback}'")
+        return fallback
 
-from Chatbot.cache.llm_cache import ColorLLMCache
-cache = ColorLLMCache.get_instance()
+    if debug:
+        print(f"[⚠️ UNSIMPLIFIED] No fallback found, returning raw phrase")
+    return phrase
+
+def is_valid_tone(phrase: str, known_tones) -> bool:
+    return phrase.lower() in known_tones
+
+def extract_suffix_fallbacks(raw_phrase: str, known_modifiers, known_tones, debug=False):
+    lowered = raw_phrase.lower()
+    for suffix in ("y", "ish"):
+        if lowered.endswith(suffix):
+            base = lowered[:-len(suffix)].rstrip("-").strip()
+            if len(base) < 3 or not base.isalpha():
+                if debug:
+                    print(f"[⛔ INVALID BASE] '{lowered}' → '{base}' (too short or invalid)")
+                continue
+            resolved = resolve_modifier_token(base, known_modifiers, known_tones)
+            if resolved:
+                simplified = f"{resolved} {base}"
+                if debug:
+                    print(f"[🧪 SUFFIX FALLBACK] '{raw_phrase}' → '{simplified}'")
+                return simplified
+    return None
 
 
+def build_prompt(phrase: str) -> str:
+    return f"What is the simplified base color or tone implied by: '{phrase}'?"
 
 
-def simplify_phrase_if_needed(phrase: str) -> List[str]:
-    """
-    Returns a simplified version of a color phrase if possible,
-    using cache and fallback to an LLM simplification call.
+def simplify_color_description_with_llm(phrase: str, llm_client, cache=None, debug=False) -> str:
+    prompt = build_prompt(phrase)
+    if debug:
+        print(f"[🧠 LLM PROMPT] {prompt}")
 
-    Args:
-        phrase (str): The user input color phrase.
+    if cache:
+        cached = cache.get_simplified(phrase)
+        if cached:
+            if debug:
+                print(f"[🗃️ CACHE HIT] '{phrase}' → '{cached}'")
+            return cached
 
-    Returns:
-        List[str]: Simplified phrase list or the original phrase in a list.
-    """
-    cached = cache.get_simplified(phrase)
-    if cached:
-        return cached
+    simplified = llm_client.simplify(prompt)
 
-    simplified = simplify_color_description_with_llm(phrase)
-    if simplified:
+    if cache:
         cache.store_simplified(phrase, simplified)
-        return simplified
 
-    return [phrase]
-
-
-def build_prompt(color_phrase: str) -> str:
-    """
-    Builds the prompt string for the LLM given the input color phrase.
-
-    Args:
-        color_phrase (str): The color phrase to simplify.
-
-    Returns:
-        str: The formatted prompt.
-    """
-    return (
-        f"You are a beauty product color simplifier.\n"
-        f"Your task is to determine if the word '{color_phrase}' refers to an actual color or shade used in makeup, cosmetics, or fashion.\n"
-        f"If it clearly refers to a color, return a simplified version using a tone and optional modifier (e.g., 'soft pink').\n"
-        f"If it is not a color (e.g., 'elegant', 'luxurious', 'shiny', 'clean'), return an empty string.\n"
-        f"⚠️ Only output a valid tone or modifier + tone. No explanations, no punctuation.\n\n"
-        f"Examples:\n"
-        f"- 'elegant' → ''\n"
-        f"- 'success' → ''\n"
-        f"- 'peachy' → 'light peach'\n"
-        f"- 'blush' → 'soft pink'\n\n"
-        f"Only return the simplified phrase."
-    )
-
-
-def is_valid_tone(token: str, tone_keywords: set) -> bool:
-    """
-    Determines if a token is a valid tone based on known tones and suffix heuristics.
-    """
-    return token in tone_keywords or token.endswith(("ish", "y"))
-
-
-def simplify_color_description_with_llm(color_phrase: str) -> List[str]:
-    """
-    Simplifies a descriptive color phrase into a normalized modifier + tone
-    by querying an LLM through the OpenRouter API.
-
-    Args:
-        color_phrase (str): Raw user input color phrase.
-
-    Returns:
-        List[str]: List containing a simplified phrase or empty list if none.
-    """
-    api_key = os.getenv("OPENROUTER_API_KEY")
-    if not api_key:
-        raise ValueError("OPENROUTER_API_KEY not found in environment variables.")
-
-    prompt = build_prompt(color_phrase)
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-
-    data = {
-        "model": "mistralai/mistral-7b-instruct",
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.2,
-        "max_tokens": 15,
-    }
-
-    response = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers=headers,
-        data=json.dumps(data)
-    )
-    if response.status_code != 200:
-        raise RuntimeError(f"OpenRouter API error {response.status_code}: {response.text}")
-
-    raw_response = response.json()["choices"][0]["message"]["content"].strip().lower()
-    if not raw_response:
-        return []
-
-    tokens = raw_response.split()
-
-    css_tones = set(webcolors.CSS3_NAMES_TO_HEX.keys())
-    xkcd_tones = set(name.replace("xkcd:", "") for name in XKCD_COLORS)
-    tone_keywords = css_tones.union(xkcd_tones)
-
-    # Look for modifier + tone pair first
-    for i in range(len(tokens) - 1):
-        mod, tone = tokens[i], tokens[i + 1]
-        if is_valid_tone(tone, tone_keywords):
-            return [f"{mod} {tone}"]
-
-    # If no pair found, return single valid tone if any
-    for token in tokens:
-        if is_valid_tone(token, tone_keywords):
-            return [token]
-
-    return []
+    if debug:
+        print(f"[🧠 LLM RESPONSE] '{phrase}' → '{simplified}'")
+    return simplified

@@ -1,37 +1,49 @@
 #Chatbot/extractors/color/logic/compound_rules.py
 
 """
-compound_rules.py
-==================
+compound_rule.py
+=================
 Domain-specific rules for filtering invalid modifier-tone combinations
 during compound color phrase extraction.
 
-Includes:
-- Blocklist suppression (e.g., 'light night')
-- Symmetric matching for modifier-tone and tone-modifier pairs
+Used By:
+--------
+- extract_from_adjacent()
+- extract_from_split()
+- extract_from_glued()
+
+Key Logic:
+----------
+- Explicit pair blocklist using known rejection tuples
+
+Dependencies:
+-------------
+- BLOCKED_TOKENS from Chatbot.extractors.color.shared.constants
 """
 
 from typing import Set, Tuple
+from Chatbot.extractors.color.shared.constants import BLOCKED_TOKENS
 
 
 def is_blocked_modifier_tone_pair(
     modifier: str,
     tone: str,
-    blocked_pairs: Set[Tuple[str, str]]
+    blocked_pairs: Set[Tuple[str, str]] = BLOCKED_TOKENS
 ) -> bool:
     """
-    Checks whether a given modifier-tone pair is explicitly blocked.
+    Checks whether a modifier-tone pair is explicitly blocked.
 
-    This is used to suppress confusing or invalid compound color phrases
-    such as 'light night' or 'romantic dramatic'.
+    This function helps suppress invalid or misleading combinations
+    such as 'light night' or 'romantic dramatic', by consulting a
+    domain-specific blocklist.
 
     Args:
-        modifier (str): Modifier candidate (e.g., 'light').
-        tone (str): Tone or color candidate (e.g., 'night').
-        blocked_pairs (Set[Tuple[str, str]]): Known bad pairs to suppress.
+        modifier (str): Modifier word (e.g., 'light').
+        tone (str): Tone or color word (e.g., 'night').
+        blocked_pairs (Set[Tuple[str, str]]): Optional override blocklist.
 
     Returns:
-        bool: True if the (modifier, tone) pair or its reverse is blocked.
+        bool: True if either (modifier, tone) or (tone, modifier) is blocked.
     """
     pair = (modifier.lower(), tone.lower())
     reverse = (tone.lower(), modifier.lower())

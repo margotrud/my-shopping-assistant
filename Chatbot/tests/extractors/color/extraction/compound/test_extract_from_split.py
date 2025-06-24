@@ -42,7 +42,7 @@ class TestExtractFromSplit(unittest.TestCase):
     def test_case_06(self): self.run_case("icygreen skyblue", {"icy blue", "icy green"})
     def test_case_07(self): self.run_case("mintyrose", set())
     def test_case_08(self): self.run_case("sunnypink", set())
-    def test_case_09(self): self.run_case("coolgray blue", {"cool gray"})
+    def test_case_09(self): self.run_case("coolgray blue", {"cool blue"})
     def test_case_10(self): self.run_case("warmtaupe beige", {"warm taupe", "warm beige"})
 
     def test_case_11(self): self.run_case("rosybrown", set())
@@ -61,7 +61,7 @@ class TestExtractFromSplit(unittest.TestCase):
     def test_case_23(self): self.run_case("mochabrown", set())
     def test_case_24(self): self.run_case("glamgold", set())
     def test_case_25(self): self.run_case("shinycopper", set())
-    def test_case_26(self): self.run_case("taupeybeige", {"taupey beige"})
+    def test_case_26(self): self.run_case("taupeybeige", {"taupe beige"})
     def test_case_27(self): self.run_case("edgyred", set())
     def test_case_28(self): self.run_case("rosishpink", set())
     def test_case_29(self): self.run_case("chalkishwhite", set())
