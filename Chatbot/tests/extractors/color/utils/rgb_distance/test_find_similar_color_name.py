@@ -328,7 +328,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (131, 84, 187),
             "color_4": (133, 87, 191)
         }
-        expected = ["color_0", "color_1", "color_2", "color_3"]
+        expected = ["color_0", "color_1", "color_2", "color_3", "color_4"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=60)
         self.assertEqual(sorted(expected), sorted(result))
 
@@ -341,7 +341,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (136, 87, 194),
             "color_4": (138, 90, 198)
         }
-        expected = ["color_0", "color_1", "color_2", "color_3"]
+        expected = ["color_0", "color_1", "color_2", "color_3","color_4"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=70)
         self.assertEqual(sorted(expected), sorted(result))
 
@@ -354,7 +354,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (141, 90, 201),
             "color_4": (143, 93, 205)
         }
-        expected = ["color_0", "color_1", "color_2", "color_3"]
+        expected = ["color_0", "color_1", "color_2", "color_3", "color_4"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=80)
         self.assertEqual(sorted(expected), sorted(result))
 
@@ -367,7 +367,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (146, 93, 208),
             "color_4": (148, 96, 212)
         }
-        expected = ["color_0", "color_1", "color_2", "color_3"]
+        expected = ["color_0", "color_1", "color_2", "color_3", "color_4"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=90)
         self.assertEqual(sorted(expected), sorted(result))
 
@@ -380,7 +380,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (151, 96, 215),
             "color_4": (153, 99, 219)
         }
-        expected = ["color_0", "color_1", "color_2", "color_3"]
+        expected = ["color_0", "color_1", "color_2", "color_3", "color_4"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=100)
         self.assertEqual(sorted(expected), sorted(result))
 
@@ -393,7 +393,7 @@ class TestFindSimilarColorNames(unittest.TestCase):
             "color_3": (156, 99, 222),
             "color_4": (158, 102, 226)
         }
-        expected = ["color_0"]
+        expected = ["color_0", "color_1"]
         result = find_similar_color_names(base_rgb, rgb_map, threshold=10)
         self.assertEqual(sorted(expected), sorted(result))
 

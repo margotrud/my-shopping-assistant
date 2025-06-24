@@ -102,7 +102,6 @@ def find_similar_color_names(
 
 def fuzzy_match_rgb_from_known_colors(
     phrase: str,
-    known_rgb_map: Dict[str, Tuple[int, int, int]]
 ) -> Optional[str]:
     """
     Attempts to match a phrase to the closest known named RGB color.
