@@ -52,25 +52,33 @@ def fuzzy_token_match(a: str, b: str) -> float:
     bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
 
     return min(100, round((partial + ratio) / 2 + bonus))
-def match_expression_aliases(input_text: str, aliases: List[str], threshold: int = 85) -> bool:
+def match_expression_aliases(input_text: str, aliases: list, threshold: int = 80) -> bool:
     """
     Determines if user input fuzzily matches any known expression alias.
+    Uses both partial and token sort ratio for robust matching.
 
     Args:
-        input_text (str): Lowercased user input (e.g., "soft glam").
-        aliases (List[str]): Alias tokens for an expression.
-        threshold (int): Match threshold (default: 85).
+        input_text (str): User input (not necessarily lowercase).
+        aliases (List[str]): List of known aliases for an expression.
+        threshold (int): Minimum fuzzy score to count as match.
 
     Returns:
-        bool: True if any alias matches, else False.
+        bool: True if any alias matches input fuzzily, else False.
     """
+    input_text = input_text.lower()
+
     for alias in aliases:
-        score = fuzz.partial_ratio(alias.lower(), input_text.lower())
+        alias = alias.lower()
+
+        score = max(
+            fuzz.partial_ratio(alias, input_text),
+            fuzz.token_sort_ratio(alias, input_text)
+        )
+
         if score >= threshold:
             return True
+
     return False
-
-
 def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 85) -> bool:
     """
     Evaluates whether a multi-word alias should be accepted as a match based on fuzzy similarity.
