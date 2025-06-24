@@ -11,17 +11,28 @@ from Chatbot.extractors.color.shared.constants import EXPRESSION_SUPPRESSION_RUL
 from Chatbot.extractors.general.utils.fuzzy_match import match_expression_aliases
 
 
-def get_valid_tokens(tokens: List[Token], expression_map: Dict) -> List[str]:
+def get_valid_tokens(text: str, expression_map: Dict) -> List[str]:
     """
-    Extracts lowercase tokens that match known aliases or modifiers in expression_map.
+    Extracts valid full expression aliases (multi-word or single) from the input text.
+    Avoids returning both 'soft' and 'glam' if 'soft glam' is already matched.
     """
-    return [
-        tok.text.lower()
-        for tok in tokens
-        if tok.text.lower() in expression_map or any(
-            tok.text.lower() in expression_map[key].get("aliases", []) for key in expression_map
-        )
-    ]
+    text_lower = text.lower()
+    matched = set()
+
+    all_aliases = set()
+    for entry in expression_map.values():
+        all_aliases.update(entry.get("aliases", []))
+        all_aliases.update(entry.get("modifiers", []))
+
+    # Sort aliases by descending length so "soft glam" is matched before "soft"
+    for alias in sorted(all_aliases, key=lambda x: -len(x)):
+        alias_lower = alias.lower()
+        if alias_lower in text_lower:
+            # Check if it's already part of a longer match
+            if not any(alias_lower in longer for longer in matched if alias_lower != longer):
+                matched.add(alias_lower)
+
+    return sorted(matched)
 def map_expressions_to_tones(
     text: str,
     expression_def: Dict[str, Dict[str, List[str]]],

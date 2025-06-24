@@ -1,57 +1,39 @@
+# tests/test_is_blocked_modifier_tone_pair.py
+
 import unittest
-from typing import Tuple, Set
 from Chatbot.extractors.color.logic.compound_rule import is_blocked_modifier_tone_pair
 from Chatbot.extractors.color.shared.constants import BLOCKED_TOKENS
 
+
 class TestIsBlockedModifierTonePair(unittest.TestCase):
 
-    def test_case_01(self): self.assertTrue(is_blocked_modifier_tone_pair("light", "night", BLOCKED_TOKENS))
-    def test_case_02(self): self.assertTrue(is_blocked_modifier_tone_pair("night", "light", BLOCKED_TOKENS))
-    def test_case_03(self): self.assertTrue(is_blocked_modifier_tone_pair("romantic", "dramatic", BLOCKED_TOKENS))
-    def test_case_04(self): self.assertTrue(is_blocked_modifier_tone_pair("dramatic", "romantic", BLOCKED_TOKENS))
-    def test_case_05(self): self.assertFalse(is_blocked_modifier_tone_pair("soft", "pink", BLOCKED_TOKENS))
-    def test_case_06(self): self.assertFalse(is_blocked_modifier_tone_pair("deep", "red", BLOCKED_TOKENS))
-    def test_case_07(self): self.assertFalse(is_blocked_modifier_tone_pair("cool", "blue", BLOCKED_TOKENS))
-    def test_case_08(self): self.assertFalse(is_blocked_modifier_tone_pair("warm", "peach", BLOCKED_TOKENS))
-    def test_case_09(self): self.assertFalse(is_blocked_modifier_tone_pair("bright", "yellow", BLOCKED_TOKENS))
-    def test_case_10(self): self.assertFalse(is_blocked_modifier_tone_pair("neutral", "cream", BLOCKED_TOKENS))
-    def test_case_11(self): self.assertFalse(is_blocked_modifier_tone_pair("light", "blue", BLOCKED_TOKENS))
-    def test_case_12(self): self.assertFalse(is_blocked_modifier_tone_pair("matte", "red", BLOCKED_TOKENS))
-    def test_case_13(self): self.assertFalse(is_blocked_modifier_tone_pair("bare", "skin", BLOCKED_TOKENS))
-    def test_case_14(self): self.assertFalse(is_blocked_modifier_tone_pair("dusty", "rose", BLOCKED_TOKENS))
-    def test_case_15(self): self.assertFalse(is_blocked_modifier_tone_pair("nude", "peach", BLOCKED_TOKENS))
-    def test_case_16(self): self.assertFalse(is_blocked_modifier_tone_pair("glossy", "brown", BLOCKED_TOKENS))
-    def test_case_17(self): self.assertFalse(is_blocked_modifier_tone_pair("pastel", "green", BLOCKED_TOKENS))
-    def test_case_18(self): self.assertFalse(is_blocked_modifier_tone_pair("deep", "plum", BLOCKED_TOKENS))
-    def test_case_19(self): self.assertFalse(is_blocked_modifier_tone_pair("bold", "statement", BLOCKED_TOKENS))
-    def test_case_20(self): self.assertFalse(is_blocked_modifier_tone_pair("icy", "blue", BLOCKED_TOKENS))
-    def test_case_21(self): self.assertFalse(is_blocked_modifier_tone_pair("frosted", "glass", BLOCKED_TOKENS))
-    def test_case_22(self): self.assertFalse(is_blocked_modifier_tone_pair("airy", "white", BLOCKED_TOKENS))
-    def test_case_23(self): self.assertFalse(is_blocked_modifier_tone_pair("soft", "mint", BLOCKED_TOKENS))
-    def test_case_24(self): self.assertFalse(is_blocked_modifier_tone_pair("neutral", "vibrant", BLOCKED_TOKENS))
-    def test_case_25(self): self.assertFalse(is_blocked_modifier_tone_pair("stormy", "blue", BLOCKED_TOKENS))
-    def test_case_26(self): self.assertFalse(is_blocked_modifier_tone_pair("milky", "pastel", BLOCKED_TOKENS))
-    def test_case_27(self): self.assertFalse(is_blocked_modifier_tone_pair("muted", "lavender", BLOCKED_TOKENS))
-    def test_case_28(self): self.assertFalse(is_blocked_modifier_tone_pair("rich", "brown", BLOCKED_TOKENS))
-    def test_case_29(self): self.assertFalse(is_blocked_modifier_tone_pair("sunny", "yellow", BLOCKED_TOKENS))
-    def test_case_30(self): self.assertFalse(is_blocked_modifier_tone_pair("bold", "elegant", BLOCKED_TOKENS))
-    def test_case_31(self): self.assertFalse(is_blocked_modifier_tone_pair("shiny", "silver", BLOCKED_TOKENS))
-    def test_case_32(self): self.assertFalse(is_blocked_modifier_tone_pair("dark", "gold", BLOCKED_TOKENS))
-    def test_case_33(self): self.assertFalse(is_blocked_modifier_tone_pair("bright", "lime", BLOCKED_TOKENS))
-    def test_case_34(self): self.assertFalse(is_blocked_modifier_tone_pair("barely-there", "nude", BLOCKED_TOKENS))
-    def test_case_35(self): self.assertFalse(is_blocked_modifier_tone_pair("warm", "gray", BLOCKED_TOKENS))
-    def test_case_36(self): self.assertFalse(is_blocked_modifier_tone_pair("cool", "ivory", BLOCKED_TOKENS))
-    def test_case_37(self): self.assertFalse(is_blocked_modifier_tone_pair("fresh", "green", BLOCKED_TOKENS))
-    def test_case_38(self): self.assertFalse(is_blocked_modifier_tone_pair("mossy", "olive", BLOCKED_TOKENS))
-    def test_case_39(self): self.assertFalse(is_blocked_modifier_tone_pair("classic", "red", BLOCKED_TOKENS))
-    def test_case_40(self): self.assertFalse(is_blocked_modifier_tone_pair("soft", "coral", BLOCKED_TOKENS))
-    def test_case_41(self): self.assertFalse(is_blocked_modifier_tone_pair("deep", "teal", BLOCKED_TOKENS))
-    def test_case_42(self): self.assertFalse(is_blocked_modifier_tone_pair("cool", "aqua", BLOCKED_TOKENS))
-    def test_case_43(self): self.assertFalse(is_blocked_modifier_tone_pair("bright", "orange", BLOCKED_TOKENS))
-    def test_case_44(self): self.assertFalse(is_blocked_modifier_tone_pair("dark", "magenta", BLOCKED_TOKENS))
-    def test_case_45(self): self.assertFalse(is_blocked_modifier_tone_pair("neutral", "beige", BLOCKED_TOKENS))
-    def test_case_46(self): self.assertFalse(is_blocked_modifier_tone_pair("warm", "rose", BLOCKED_TOKENS))
-    def test_case_47(self): self.assertFalse(is_blocked_modifier_tone_pair("deep", "wine", BLOCKED_TOKENS))
-    def test_case_48(self): self.assertFalse(is_blocked_modifier_tone_pair("icy", "mint", BLOCKED_TOKENS))
-    def test_case_49(self): self.assertFalse(is_blocked_modifier_tone_pair("dark", "turquoise", BLOCKED_TOKENS))
-    def test_case_50(self): self.assertFalse(is_blocked_modifier_tone_pair("soft", "apricot", BLOCKED_TOKENS))
+    def run_case(self, mod, tone, expected_result):
+        result = is_blocked_modifier_tone_pair(mod, tone, BLOCKED_TOKENS)
+        self.assertEqual(expected_result, result, f"Expected: {expected_result}\nActual: {result}")
+
+    def test_case_01(self): self.run_case("light", "night", True)
+    def test_case_02(self): self.run_case("night", "light", True)
+    def test_case_03(self): self.run_case("romantic", "dramatic", True)
+    def test_case_04(self): self.run_case("dramatic", "romantic", True)
+    def test_case_05(self): self.run_case("bold", "neutral", False)
+    def test_case_06(self): self.run_case("neutral", "bold", False)
+    def test_case_07(self): self.run_case("glamorous", "daytime", False)
+    def test_case_08(self): self.run_case("daytime", "glamorous", False)
+    def test_case_09(self): self.run_case("edgy", "romantic", False)
+    def test_case_10(self): self.run_case("soft glam", "edgy", False)
+
+    def test_case_11(self): self.run_case("soft", "pink", False)
+    def test_case_12(self): self.run_case("light", "pink", False)
+    def test_case_13(self): self.run_case("deep", "rose", False)
+    def test_case_14(self): self.run_case("muted", "nude", False)
+    def test_case_15(self): self.run_case("romantic", "rose", False)
+
+    def test_case_16(self): self.run_case("daytime", "natural", False)
+    def test_case_17(self): self.run_case("subtle", "nude", False)
+    def test_case_18(self): self.run_case("intense", "red", False)
+    def test_case_19(self): self.run_case("dramatic", "night", False)
+    def test_case_20(self): self.run_case("light", "beige", False)
+
+
+if __name__ == "__main__":
+    unittest.main()
