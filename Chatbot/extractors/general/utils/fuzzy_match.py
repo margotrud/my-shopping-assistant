@@ -109,21 +109,17 @@ def is_exact_match(a: str, b: str) -> bool:
     return normalize_token(a) == normalize_token(b)
 
 
-def is_strong_fuzzy_match(a: str, b: str, threshold: int = 88) -> bool:
-    """
-    Returns True if a and b are strong fuzzy matches.
+def is_strong_fuzzy_match(a: str, b: str, threshold: int = 85) -> bool:
+    a_norm = a.lower().strip()
+    b_norm = b.lower().strip()
 
-    Args:
-        a (str): First token.
-        b (str): Second token.
-        threshold (int): Minimum score required.
+    if frozenset({a_norm, b_norm}) in SEMANTIC_CONFLICTS:
+        return False
 
-    Returns:
-        bool: True if fuzzy match is strong.
-    """
-    return fuzzy_token_match(a, b) >= threshold
+    if is_negation_conflict(a_norm, b_norm):
+        return False
 
-
+    return fuzzy_token_match(a_norm, b_norm) >= threshold
 def is_embedded_alias_conflict(longer: str, shorter: str) -> bool:
     """
     Detects conflict where one alias is embedded in another (e.g., 'glamorous' vs 'glam').
@@ -171,3 +167,13 @@ def remove_subsumed_matches(matches: List[str]) -> List[str]:
         if not any(m in other and m != other for other in filtered):
             filtered.append(m)
     return filtered
+
+
+def is_negation_conflict(a: str, b: str) -> bool:
+    a = a.strip().lower()
+    b = b.strip().lower()
+
+    return (
+        (a.startswith("no ") and a[3:] == b) or
+        (b.startswith("no ") and b[3:] == a)
+    )
