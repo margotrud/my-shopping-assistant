@@ -59,35 +59,47 @@ def _fuzzy_match_modifier(raw: str, known_modifiers: set, threshold: float = 80,
     return None
 
 
-def resolve_modifier_token(word: str, known_modifiers: set, known_tones: set, allow_fuzzy=True, is_tone=False, debug=False) -> str | None:
+def resolve_modifier_token(
+    word: str,
+    known_modifiers: set,
+    known_tones: set,
+    allow_fuzzy: bool = True,
+    is_tone: bool = False,
+    debug: bool = False
+) -> str | None:
     raw = word.lower()
-    if not is_tone and raw in known_tones:
-        if debug:
-            print(f"[⛔ BLOCKED] '{raw}' is a tone, not a modifier")
-        return None
 
+    def debug_print(message: str):
+        if debug:
+            print(message)
+
+    # 1. Direct exact match
     direct = match_direct_modifier(raw, known_modifiers)
     if direct:
-        if debug:
-            print(f"[✅ DIRECT MATCH] '{raw}' → '{direct}'")
+        debug_print(f"[✅ DIRECT MATCH] '{raw}' → '{direct}'")
         return direct
 
+    # 2. Suffix fallback (e.g., 'dusty' → 'dust')
     suffix = match_suffix_fallback(raw, known_modifiers)
     if suffix:
-        if debug:
-            print(f"[🌀 SUFFIX MATCH] '{raw}' → '{suffix}'")
+        debug_print(f"[🌀 SUFFIX MATCH] '{raw}' → '{suffix}'")
         return suffix
 
+    # 3. Block tones only if no modifier matched yet
+    if not is_tone and raw in known_tones:
+        debug_print(f"[⛔ BLOCKED] '{raw}' is a tone, not a modifier")
+        return None
+
+    # 4. Fuzzy fallback
     if allow_fuzzy:
         fuzzy = fuzzy_match_modifier_safe(raw, known_modifiers)
         if fuzzy:
-            if debug:
-                print(f"[🤏 FUZZY MATCH] '{raw}' → '{fuzzy}'")
+            debug_print(f"[🤏 FUZZY MATCH] '{raw}' → '{fuzzy}'")
             return fuzzy
 
-    if debug:
-        print(f"[❌ UNRESOLVED] '{raw}' not matched")
+    debug_print(f"[❌ UNRESOLVED] '{raw}' not matched")
     return None
+
 
 
 def is_y_suffix_from_tone(word: str, known_tones: set) -> bool:
