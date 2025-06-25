@@ -1,6 +1,7 @@
 import webcolors
 from matplotlib.colors import XKCD_COLORS
 
+
 css3 = set(webcolors.CSS3_NAMES_TO_HEX.keys())
 css21 = set(webcolors.CSS21_NAMES_TO_HEX.keys())
 xkcd = set(name.replace("xkcd:", "") for name in XKCD_COLORS.keys())

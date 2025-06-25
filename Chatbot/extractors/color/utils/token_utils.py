@@ -35,7 +35,9 @@ def split_glued_tokens(
     Returns:
         List[str]: List of recognized token parts from the input.
     """
+
     token = normalize_token(token)
+
 
     # Combine bases for suffix generation
     bases_for_suffix = known_modifiers.union(known_tokens)
