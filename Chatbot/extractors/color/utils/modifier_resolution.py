@@ -8,7 +8,8 @@ Handles all logic related to resolving modifier tokens in descriptive color phra
 Supports direct matching, suffix fallback, and fuzzy logic.
 """
 from Chatbot.extractors.color.shared.vocab import known_tones
-from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match, normalize_token
+from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match
+from Chatbot.extractors.color.utils.token_utils import normalize_token
 
 
 def is_known_tone(word: str) -> bool:

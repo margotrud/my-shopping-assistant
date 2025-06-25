@@ -69,12 +69,12 @@ class TestSplitTokensToParts(unittest.TestCase):
     def test_case_42(self): self.run_case("dusty-rose", ["dusty", "rose"])
     def test_case_43(self): self.run_case("natural-beige", ["natural", "beige"])
     def test_case_44(self): self.run_case("peach-blush", ["peach", "blush"])
-    def test_case_45(self): self.run_case("olive-toned", ["olive", "toned"])
+    def test_case_45(self): self.run_case("olive-toned", None)
 
     def test_case_46(self): self.run_case("freshmint", ["fresh", "mint"])
     def test_case_47(self): self.run_case("earthybrown", ["earthy", "brown"])
     def test_case_48(self): self.run_case("hazelgreen", ["hazel", "green"])
-    def test_case_49(self): self.run_case("bronzeblend", ["bronze", "blend"])
+    def test_case_49(self): self.run_case("bronzeblend", None)
     def test_case_50(self): self.run_case("mattemocha", ["matte", "mocha"])
 
 

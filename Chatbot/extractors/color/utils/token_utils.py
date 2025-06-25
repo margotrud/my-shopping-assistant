@@ -92,6 +92,7 @@ def split_glued_tokens(
     if parts:
         if debug:
             print(f"✅ Final recursive parts: {parts}")
+        parts = [normalize_token(p) for p in parts]
         return parts
 
     # Improved fallback: find the longest known token anywhere in the glued token
@@ -139,19 +140,12 @@ def normalize_token(token: str) -> str:
     """
     Normalizes a token for comparison and matching.
 
-    Steps:
-    - Lowercases the string
-    - Strips leading/trailing whitespace
-    - Removes trailing hyphens
-    - Singularizes cosmetic plurals (e.g., 'blushes' → 'blush')
-
-    Args:
-        token (str): Raw input token
-
-    Returns:
-        str: Normalized version
+    - Lowercases
+    - Strips whitespace
+    - Removes all hyphens (not just trailing)
+    - Singularizes cosmetic plurals
     """
-    token = token.lower().strip().rstrip("-")
+    token = token.lower().replace("-", "").strip()
     token = singularize(token)
     return token
 

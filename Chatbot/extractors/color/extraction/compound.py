@@ -68,7 +68,7 @@ def split_tokens_to_parts(text, known_color_tokens):
         print(f"[🔍 TRY] '{left}' + '{right}' → resolved: '{resolved_left}', '{resolved_right}'")
 
         if resolved_left in known_color_tokens and resolved_right in known_color_tokens:
-            return [left, right]
+            return [normalize_token(left), normalize_token(right)]
 
     return None
 
