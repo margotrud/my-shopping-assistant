@@ -14,7 +14,9 @@ Functions:
 - split_tokens_to_parts
 - attempt_mod_tone_pair
 """
-from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token
+from typing import Set, List
+
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound
 from Chatbot.extractors.color.utils.token_utils import split_glued_tokens, singularize
 
 def extract_compound_phrases(
@@ -105,8 +107,66 @@ def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, kno
             compounds.add(compound)
             raw_compounds.append(compound)
 
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound
 
-def attempt_mod_tone_pair(mod_candidate, tone_candidate, known_modifiers, known_tones):
-    if mod_candidate in known_modifiers and tone_candidate in known_tones:
-        return f"{mod_candidate} {tone_candidate}"
-    return None
+def attempt_mod_tone_pair(
+    mod_candidate: str,
+    tone_candidate: str,
+    compounds: set,
+    raw_compounds: list,
+    known_modifiers: set,
+    known_tones: set,
+    all_webcolor_names: set,
+    debug: bool
+):
+    if debug:
+        print(f"[🔍 MOD CHECK] mod_candidate='{mod_candidate}'")
+        print(f"[🔍 TONE CHECK] tone_candidate='{tone_candidate}'")
+
+    mod = resolve_modifier_token(
+        mod_candidate,
+        known_modifiers,
+        known_tones=known_tones,
+        allow_fuzzy=False,
+        is_tone=False
+    )
+
+    if not mod:
+        if debug:
+            print(f"⛔ Rejected: modifier '{mod_candidate}' is not valid")
+        return
+
+    tone = resolve_modifier_token(
+        tone_candidate,
+        known_modifiers,
+        known_tones=known_tones,
+        allow_fuzzy=False,
+        is_tone=True
+    )
+
+    if not tone:
+        if tone_candidate in known_tones or tone_candidate in all_webcolor_names:
+            tone = tone_candidate
+            if debug:
+                print(f"[⚠️ FALLBACK] accepted tone='{tone}' via direct match")
+        else:
+            if debug:
+                print(f"⛔ Rejected: '{tone_candidate}' is not a strict tone")
+            return
+
+    if (tone.endswith("y") or tone.endswith("ish")) and tone not in known_tones and tone not in all_webcolor_names:
+        if debug:
+            print(f"⛔ Rejected: tone='{tone}' looks suffixy and is not a real tone")
+        return
+
+    if should_suppress_compound(mod, tone):
+        if debug:
+            print(f"[⛔ SUPPRESSED] {mod} {tone}")
+        return
+
+    compound = f"{mod} {tone}"
+    compounds.add(compound)
+    raw_compounds.append(compound)
+    if debug:
+        print(f"[✅ COMPOUND DETECTED] → '{compound}'")
+
