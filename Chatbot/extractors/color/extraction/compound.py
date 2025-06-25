@@ -214,21 +214,66 @@ def fallback_split(raw, known_color_tokens, debug=False):
 
 
 
-def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug=False):
+def extract_from_split(
+    tokens,
+    compounds,
+    raw_compounds,
+    known_color_tokens,
+    known_modifiers,
+    known_tones,
+    all_webcolor_names,
+    debug=False
+):
+
     for token in tokens:
-        text = normalize_token(token.text)
+
+        text = token.text.lower()
         if text in known_color_tokens:
             continue
         if any(text in c.replace(" ", "") for c in compounds):
             continue
 
-        parts = split_tokens_to_parts(text)
-        if not parts:
+        if debug:
+            print(f"\n[🔍 SPLIT START] Input: '{text}'")
+
+        parts = split_tokens_to_parts(text, known_color_tokens)
+        if not parts or len(parts) != 2:
+            if debug:
+                print(f"[⛔ INVALID SPLIT] → {parts}")
             continue
 
         mod_candidate, tone_candidate = parts
+
+        # Try resolving modifier
         mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones)
+
+        # 👇 STRONG FALLBACK: try cleaning suffixes manually
+        if not mod:
+            if mod_candidate in known_tones:
+                mod = mod_candidate
+                if debug:
+                    print(f"[⚠️ DIRECT TONE FALLBACK] '{mod_candidate}' accepted as modifier")
+            else:
+                base = None
+                if mod_candidate.endswith("y"):
+                    base = mod_candidate[:-1]
+                elif mod_candidate.endswith("ish"):
+                    base = mod_candidate[:-3]
+
+                if base and (base in known_tones or base in known_modifiers):
+                    mod = base
+                    if debug:
+                        print(f"[⚠️ SUFFIX FALLBACK] '{mod_candidate}' → '{base}'")
+
+                    if debug:
+                        print(f"[⚠️ SUFFIX FALLBACK] '{mod_candidate}' → '{base}'")
+
+        # Check tone validity
         is_valid = tone_candidate in known_tones or tone_candidate in all_webcolor_names
+
+        if debug:
+            print(f"[🧪 DEBUG CHECK] mod_candidate='{mod_candidate}' → resolved='{mod}'")
+            print(f"[🧪 DEBUG CHECK] tone_candidate='{tone_candidate}' → is_valid={is_valid}")
 
         if mod and is_valid:
             compound = f"{mod} {tone_candidate}"
