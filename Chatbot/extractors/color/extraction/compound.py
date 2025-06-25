@@ -36,18 +36,56 @@ def extract_compound_phrases(
     extract_from_glued(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
 
 
-def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, debug=False):
+
+
+def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, debug=True):
     for i in range(len(tokens) - 1):
-        mod = normalize_token(tokens[i].text)
-        tone = normalize_token(tokens[i + 1].text)
-        if mod in known_modifiers and tone in known_tones:
+        raw_mod = tokens[i].text.lower()
+        raw_tone = tokens[i + 1].text.lower()
+
+        if debug:
+            print(f"\n[🔍 ADJACENT PAIR] '{raw_mod}' + '{raw_tone}'")
+
+        # Modifier resolution: try exact match first
+        if raw_mod in known_modifiers or raw_mod in known_tones:
+            mod = raw_mod
+            if debug:
+                print(f"[✅ MODIFIER MATCH] '{raw_mod}' accepted (modifier or tone)")
+
+        elif raw_mod.endswith(("y", "ish")):
+            fallback = raw_mod.rstrip("y").rstrip("ish")
+            mod = fallback if fallback in known_modifiers else None
+            if debug:
+                if mod:
+                    print(f"[🔁 MODIFIER SUFFIX] '{raw_mod}' → '{mod}'")
+                else:
+                    print(f"[⛔ MODIFIER FAIL] '{raw_mod}' not found, even after suffix")
+        else:
+            mod = None
+            if debug:
+                print(f"[⛔ MODIFIER FAIL] '{raw_mod}' not found")
+
+        # Tone resolution: singularize and check
+        tone = singularize(raw_tone)
+        if tone in known_tones:
+            if debug:
+                print(f"[✅ TONE MATCH] '{raw_tone}' → '{tone}' accepted as tone")
+        else:
+            if debug:
+                print(f"[⛔ TONE FAIL] '{raw_tone}' → '{tone}' not in known tones")
+            tone = None
+
+        # Final compound
+        if mod and tone:
             phrase = f"{mod} {tone}"
             if phrase not in compounds:
                 if debug:
-                    print(f"[🧱 COMPOUND] Adjacent pair → '{phrase}'")
+                    print(f"[🧱 COMPOUND ADDED] → '{phrase}'")
                 compounds.add(phrase)
                 raw_compounds.append(phrase)
-
+            else:
+                if debug:
+                    print(f"[🔁 SKIPPED DUPLICATE] '{phrase}' already added")
 
 
 
