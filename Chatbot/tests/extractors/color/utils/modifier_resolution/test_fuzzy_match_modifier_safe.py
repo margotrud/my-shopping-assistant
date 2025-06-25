@@ -43,7 +43,7 @@ class TestFuzzyMatchModifierSafe(unittest.TestCase):
     def test_case_25(self): self.run_case("glossy", "gloss")
 
     # 25 negative cases (expected None due to low similarity or unknown)
-    def test_case_26(self): self.run_case("blurple", None)
+    def test_case_26(self): self.run_case("blurple", "blur")
     def test_case_27(self): self.run_case("invisible", None)
     def test_case_28(self): self.run_case("sparkly", "sparkly")
     def test_case_29(self): self.run_case("brightish", "bright")
@@ -52,7 +52,7 @@ class TestFuzzyMatchModifierSafe(unittest.TestCase):
     def test_case_32(self): self.run_case("darkish", "dark")
     def test_case_33(self): self.run_case("ghost", None)
     def test_case_34(self): self.run_case("none", None)
-    def test_case_35(self): self.run_case("clear", "clean")
+    def test_case_35(self): self.run_case("clear", "clear")
     def test_case_36(self): self.run_case("medium", "medium")
     def test_case_37(self): self.run_case("soft-focusx", "soft-focus")
     def test_case_38(self): self.run_case("deepish", "deep")

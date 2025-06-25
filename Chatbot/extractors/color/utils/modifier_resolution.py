@@ -34,7 +34,7 @@ def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
 
 
 
-def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 75) -> str | None:
+def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 81) -> str | None:
     raw = normalize_token(word)
     best = _fuzzy_match_modifier(raw, known_modifiers)
     if best and best[1] >= threshold:

@@ -16,12 +16,14 @@ Functions:
 """
 from typing import Set, List
 
+from Chatbot.extractors.color.logic.compound_rule import is_blocked_modifier_tone_pair
 from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound, match_suffix_fallback
 from Chatbot.extractors.color.utils.token_utils import split_glued_tokens, singularize
 from Chatbot.extractors.color.utils.token_utils import normalize_token
 
 import spacy
 nlp = spacy.load("en_core_web_sm")
+from spacy.tokens import Token as SpacyToken
 
 
 def extract_compound_phrases(
@@ -47,12 +49,13 @@ def extract_compound_phrases(
     raw_text = raw_text.replace("-", " ") if raw_text else ""
     if raw_text:
         tokens = nlp(raw_text)
-    # Normal token-based methods
+
+    # 🔍 Main extraction passes
     extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, debug)
     extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
     extract_from_glued(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
 
-    # Fallback scan: try building missing compounds from unresolved adjacent pairs
+    # 🩹 Fallback: attempt to resolve missed compound pairs
     for i in range(len(tokens) - 1):
         left = normalize_token(tokens[i].text)
         right = normalize_token(tokens[i + 1].text)
@@ -70,18 +73,28 @@ def extract_compound_phrases(
             is_tone=False,
             debug=debug,
         )
-        # ⛔ Reject fuzzy matches that return multi-word expressions (e.g., 'off blue')
-        if mod and " " in mod:
-            if debug:
-                print(f"[⛔ BLOCK FUZZY MULTIWORD] '{mod}' rejected (fuzzy match with space)")
-            continue
         if mod and f"{mod} {right}" not in compounds:
             compounds.add(f"{mod} {right}")
             raw_compounds.append((mod, right))
             if debug:
                 print(f"[🩹 FALLBACK PATCH] {left}+{right} → {mod} {right}")
 
+    # ⛔ Filter out blocked tone-modifier pairs
+    blocked = {
+        (m, t)
+        for pair in raw_compounds
+        if isinstance(pair, tuple) and len(pair) == 2
+        for m, t in [pair]
+        if is_blocked_modifier_tone_pair(m, t)
+    }
 
+    for mod, tone in blocked:
+        compound = f"{mod} {tone}"
+        if compound in compounds:
+            compounds.discard(compound)
+        raw_compounds.remove((mod, tone))
+        if debug:
+            print(f"[⛔ BLOCKED PAIR REMOVED] '{compound}'")
 
 
 def extract_from_adjacent(
@@ -195,42 +208,63 @@ def extract_from_glued(
                 print(f"[⛔ SKIP] Token '{raw}' is known or non-alpha")
             continue
 
-        parts = split_glued_tokens(raw, known_color_tokens, known_modifiers, debug=debug)
+        parts = split_glued_tokens(raw, known_color_tokens, known_modifiers)
 
         if not parts or len(parts) != 2:
-            if debug:
-                print(f"[❌ INVALID SPLIT] {parts}")
             continue
 
         mod_candidate, tone_candidate = parts
 
-        mod = resolve_modifier_token(
-            word=mod_candidate,
-            known_modifiers=known_modifiers,
-            known_tones=known_tones,
-            is_tone=False,
-            debug=debug
-        )
+        mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones, is_tone=False, debug=debug)
+        if tone_candidate in known_tones or tone_candidate in all_webcolor_names:
+            is_valid_tone = True
+        elif tone_candidate.endswith("y") and tone_candidate[:-1] in known_tones:
+            tone_candidate = tone_candidate[:-1]
+            is_valid_tone = True
+        elif tone_candidate.endswith("ish") and tone_candidate[:-3] in known_tones:
+            tone_candidate = tone_candidate[:-3]
+            is_valid_tone = True
+        else:
+            is_valid_tone = False
+        tone_pair = mod_candidate in known_tones and tone_candidate in known_tones
+        mod_fallback = mod_candidate in known_modifiers and is_valid_tone
+        mod_mod_pair = mod_candidate in known_modifiers and tone_candidate in known_modifiers
 
-        is_valid_tone = tone_candidate in known_tones or tone_candidate in all_webcolor_names
-
-        # ✅ Prevent redundant constructs like "off-white white"
-        if mod and tone_candidate and mod.endswith(tone_candidate):
-            if debug:
-                print(f"[⛔ SKIP REDUNDANT COMPOUND] '{mod} {tone_candidate}' → duplicate tone")
-            continue
-
+        # 1. modifier resolved + valid tone
         if mod and is_valid_tone:
             compound = f"{mod} {tone_candidate}"
-            compounds.add(compound)
-            raw_compounds.append((mod, tone_candidate))
             if debug:
                 print(f"[✅ GLUED MOD+TONE] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
 
+        # 2. known modifier + known tone (fallback)
+        elif mod_fallback:
+            compound = f"{mod_candidate} {tone_candidate}"
+            if debug:
+                print(f"[✅ GLUED MOD+TONE (fallback)] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
 
+        # 3. tone + tone
+        elif tone_pair:
+            compound = f"{mod_candidate} {tone_candidate}"
+            if debug:
+                print(f"[✅ GLUED TONE+TONE] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
 
-
-
+        # 4. modifier + modifier
+        elif mod_mod_pair:
+            compound = f"{mod_candidate} {tone_candidate}"
+            if debug:
+                print(f"[✅ GLUED MOD+MOD] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
 
 
 def extract_from_split(
@@ -263,6 +297,7 @@ def extract_from_split(
 
         mod_candidate, tone_candidate = parts
         mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones, is_tone=False, debug=debug)
+
         is_valid_tone = tone_candidate in known_tones or tone_candidate in all_webcolor_names
 
         if mod and is_valid_tone:

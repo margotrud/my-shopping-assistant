@@ -9,7 +9,7 @@ Static blocklists or filters that don’t belong in vocab or dynamic config.
 BLOCKED_TOKENS = {
     ("light", "night"),
     ("romantic", "dramatic"),
-    ("off", "white")
+    ("off blue", "white")
 }
 
 COSMETIC_NOUNS = {
