@@ -15,6 +15,8 @@ import spacy
 from Chatbot.extractors.color.old.core import singularize
 from Chatbot.extractors.general.old.helpers import split_glued_tokens
 from Chatbot.extractors.color.old.core import resolve_modifier_with_suffix_fallback, should_suppress_compound
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def extract_compound_phrases(
     tokens: List[spacy.tokens.Token],
@@ -41,7 +43,7 @@ def extract_compound_phrases(
     compounds = set()
     raw_compounds = []
     known_color_tokens = known_modifiers | known_tones | all_webcolor_names
-    token_texts = [t.text.lower() for t in tokens]
+    token_texts = [normalize_token(t.text) for t in tokens]
 
     extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, all_webcolor_names, debug)
     extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug)
@@ -69,8 +71,8 @@ def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, kno
             debug (bool): If True, prints verbose debug output for each step.
         """
     for i in range(len(tokens) - 1):
-        raw_mod = tokens[i].text.lower()
-        raw_tone = singularize(tokens[i + 1].text.lower())
+        raw_mod = normalize_token(tokens[i].text)
+        raw_tone = normalize_token(tokens[i + 1].text)
 
         mod = resolve_modifier_with_suffix_fallback(raw_mod, known_modifiers)
         tone = resolve_modifier_with_suffix_fallback(raw_tone, known_modifiers, known_tones, allow_fuzzy=False, is_tone=True)
@@ -107,8 +109,8 @@ def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, kno
             debug (bool): If True, prints debug output for each match attempt and result.
         """
     for i in range(len(tokens) - 1):
-        t1 = tokens[i].text.lower()
-        t2 = singularize(tokens[i + 1].text.lower())
+        t1 = normalize_token(tokens[i].text)
+        t2 = normalize_token(tokens[i + 1].text)
 
         parts1 = split_glued_tokens(t1, known_color_tokens)
         parts2 = split_glued_tokens(t2, known_color_tokens)
@@ -148,7 +150,7 @@ def extract_from_glued(tokens, compounds, raw_compounds, token_texts, known_colo
            debug (bool): If True, prints verbose debug output for tracing match logic and rejections.
        """
     for token in tokens:
-        raw = singularize(token.text.lower())
+        raw = normalize_token(token.text)
         if any(raw in c.replace(" ", "") for c in compounds):
             if debug:
                 print(f"[⛔ SKIPPED GLUED TOKEN] '{raw}' already detected")

@@ -4,6 +4,9 @@ import json
 import os
 from typing import Optional, Tuple, List
 
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
+
 class ColorLLMCache:
     """
     Singleton class to manage caching of LLM-based RGB resolutions and simplified phrases.
@@ -34,17 +37,17 @@ class ColorLLMCache:
         return os.path.join(project_root, "Data", "color_llm_cache.json")
 
     def get_rgb(self, phrase: str) -> Optional[Tuple[int, int, int]]:
-        val = self._rgb_cache.get(phrase.lower().strip())
+        val = self._rgb_cache.get(normalize_token(phrase))
         return tuple(val) if isinstance(val, list) else val
 
     def store_rgb(self, phrase: str, rgb: Tuple[int, int, int]):
-        self._rgb_cache[phrase.lower().strip()] = list(rgb)
+        self._rgb_cache[normalize_token(phrase)] = list(rgb)
 
     def get_simplified(self, phrase: str) -> List[str]:
-        return self._simplify_cache.get(phrase.lower().strip(), [])
+        return self._simplify_cache.get(normalize_token(phrase), [])
 
     def store_simplified(self, phrase: str, simplified: List[str]):
-        self._simplify_cache[phrase.lower().strip()] = simplified
+        self._simplify_cache[normalize_token(phrase)] = simplified
 
     def clear(self):
         self._rgb_cache.clear()

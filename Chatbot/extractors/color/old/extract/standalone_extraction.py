@@ -14,6 +14,8 @@ from Chatbot.extractors.color.old.core import singularize
 from Chatbot.extractors.color.old.extract import load_expression_definitions, find_matching_expressions
 import spacy
 
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 nlp = spacy.load("en_core_web_sm")
 
 # Define once globally
@@ -41,14 +43,14 @@ def extract_standalone_phrases(
     trigger_map = {k: v["aliases"] for k, v in expression_definitions.items() if "aliases" in v}
 
     # ───── Detect expressions
-    text_input = " ".join([t.text for t in tokens]).lower()
+    text_input = " ".join([normalize_token(t.text) for t in tokens])
     doc = nlp(text_input)
     matched_expressions = find_matching_expressions(text_input, trigger_map)
 
     # ───── Collect tokens from matched expressions
     expression_tokens = {
         token for expr in matched_expressions
-        for token in expr.lower().split()
+        for token in [normalize_token(t) for t in expr.split()]
     }
 
     if debug:
@@ -82,7 +84,7 @@ def extract_standalone_phrases(
 
     # ───── Token-level check
     for token in tokens:
-        text = token.text.lower()
+        text = normalize_token(token.text)
         norm = singularize(text)
         compound_uses = compound_token_counts[text]
         total_uses = token_counts[text]
@@ -149,7 +151,7 @@ def extract_lone_tones(
     compound_token_counts = Counter(tok for phrase in raw_compounds for tok in phrase.split())
 
     for t in tokens:
-        norm = singularize(t.text.lower())
+        norm = normalize_token(t.text)
         if (
             norm in known_tones and
             t.pos_ == "NOUN" and

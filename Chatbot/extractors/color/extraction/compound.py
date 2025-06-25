@@ -16,8 +16,10 @@ Functions:
 """
 from typing import Set, List
 
-from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound, match_suffix_fallback
 from Chatbot.extractors.color.utils.token_utils import split_glued_tokens, singularize
+from Chatbot.extractors.color.utils.token_utils import normalize_token
+
 
 def extract_compound_phrases(
     tokens,
@@ -36,8 +38,8 @@ def extract_compound_phrases(
 
 def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, debug=False):
     for i in range(len(tokens) - 1):
-        mod = tokens[i].text.lower()
-        tone = tokens[i + 1].text.lower()
+        mod = normalize_token(tokens[i].text)
+        tone = normalize_token(tokens[i + 1].text)
         if mod in known_modifiers and tone in known_tones:
             phrase = f"{mod} {tone}"
             if phrase not in compounds:
@@ -48,18 +50,33 @@ def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, kno
 
 
 
-def split_tokens_to_parts(text):
+
+def split_tokens_to_parts(text, known_color_tokens):
+    print(f"\n[🔍 SPLIT START] Input: '{text}'")
+
     if "-" in text:
-        return text.split("-", 1)
-    for i in range(2, len(text) - 2):
+        parts = text.split("-", 1)
+        if all(p in known_color_tokens for p in parts):
+            return parts
+
+    for i in reversed(range(2, len(text) - 2)):
         left, right = text[:i], text[i:]
-        if left.isalpha() and right.isalpha():
+
+        resolved_left = match_suffix_fallback(left, known_color_tokens) or left
+        resolved_right = match_suffix_fallback(right, known_color_tokens) or right
+
+        print(f"[🔍 TRY] '{left}' + '{right}' → resolved: '{resolved_left}', '{resolved_right}'")
+
+        if resolved_left in known_color_tokens and resolved_right in known_color_tokens:
             return [left, right]
+
     return None
+
+
 
 def extract_from_glued(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug=False):
     for token in tokens:
-        raw = singularize(token.text.lower())
+        raw = normalize_token(token.text)
         if any(raw in c.replace(" ", "") for c in compounds):
             if debug:
                 print(f"[⛔ SKIPPED GLUED TOKEN] '{raw}' already detected")
@@ -86,7 +103,7 @@ def extract_from_glued(tokens, compounds, raw_compounds, known_color_tokens, kno
 
 def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug=False):
     for token in tokens:
-        text = token.text.lower()
+        text = normalize_token(token.text)
         if text in known_color_tokens:
             continue
         if any(text in c.replace(" ", "") for c in compounds):
@@ -107,7 +124,6 @@ def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, kno
             compounds.add(compound)
             raw_compounds.append(compound)
 
-from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound
 
 def attempt_mod_tone_pair(
     mod_candidate: str,

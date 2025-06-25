@@ -17,6 +17,10 @@ from rapidfuzz import process
 
 from rapidfuzz import fuzz
 from typing import Dict, List
+
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
+
 def load_known_modifiers() -> Set[str]:
     """
     Loads the known modifier vocabulary from 'Data/known_modifiers.json'.
@@ -64,7 +68,7 @@ def fuzzy_match_modifier(
     if not modifier:
         return None
 
-    match = process.extractOne(modifier.lower(), known_modifiers, scorer=fuzz.ratio)
+    match = process.extractOne(normalize_token(modifier), known_modifiers, scorer=fuzz.ratio)
     return match[0] if match and match[1] >= threshold else None
 
 def match_multiword_expressions(text: str, expression_map: Dict[str, List[str]], threshold: int = 85) -> List[str]:
@@ -80,12 +84,12 @@ def match_multiword_expressions(text: str, expression_map: Dict[str, List[str]],
         List[str]: List of expression categories matched (e.g., ["soft glam"]).
     """
     matched = set()
-    lowered_text = text.lower()
+    lowered_text = normalize_token(text)
 
     for expression, triggers in expression_map.items():
         for trigger in triggers:
             if " " in trigger:
-                score = fuzz.token_sort_ratio(trigger.lower(), lowered_text)
+                score = fuzz.token_sort_ratio(normalize_token(trigger), lowered_text)
                 if score >= threshold:
                     matched.add(expression)
                     break  # One trigger is enough to match the expression

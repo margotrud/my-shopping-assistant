@@ -8,17 +8,18 @@ Handles all logic related to resolving modifier tokens in descriptive color phra
 Supports direct matching, suffix fallback, and fuzzy logic.
 """
 from Chatbot.extractors.color.shared.vocab import known_tones
-from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match
+from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match, normalize_token
+
 
 def is_known_tone(word: str) -> bool:
-    return word.lower() in known_tones
+    return normalize_token(word) in known_tones
 def match_direct_modifier(word: str, known_modifiers: set) -> str | None:
-    raw = word.lower()
+    raw = normalize_token(word)
     return raw if raw in known_modifiers else None
 
 
 def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
-    lowered = word.lower()
+    lowered = normalize_token(word)
     for suffix in ("y", "ish"):
         if lowered.endswith(suffix):
             base = lowered[:-len(suffix)].rstrip("-").strip()
@@ -33,7 +34,7 @@ def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
 
 
 def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 75) -> str | None:
-    raw = word.lower()
+    raw = normalize_token(word)
     best = _fuzzy_match_modifier(raw, known_modifiers)
     if best and best[1] >= threshold:
         return best[0]
@@ -67,7 +68,7 @@ def resolve_modifier_token(
     is_tone: bool = False,
     debug: bool = False
 ) -> str | None:
-    raw = word.lower()
+    raw = normalize_token(word)
 
     def debug_print(message: str):
         if debug:
@@ -103,7 +104,7 @@ def resolve_modifier_token(
 
 
 def is_y_suffix_from_tone(word: str, known_tones: set) -> bool:
-    raw = word.lower()
+    raw = normalize_token(word)
     return raw.endswith("y") and raw[:-1] in known_tones
 
 

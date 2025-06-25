@@ -24,7 +24,7 @@ from Chatbot.extractors.color.simplifier import simplify_phrase_if_needed
 from Chatbot.extractors.color.old.extract import clean_and_categorize
 from Chatbot.extractors.color.old.core import get_rgb_from_descriptive_color_llm_first
 from Chatbot.extractors.color.old.core import find_similar_color_names
-
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 logger = logging.getLogger("ColorPipeline")
 nlp = spacy.load("en_core_web_sm")
@@ -267,7 +267,7 @@ def resolve_fallback_tokens(
     doc = nlp(segment.lower())
 
     for token in doc:
-        candidate = token.text.lower()
+        candidate = normalize_token(token.text)
 
         if (
             candidate not in seen_phrases and

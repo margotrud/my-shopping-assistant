@@ -12,13 +12,15 @@ from Chatbot.extractors.color.shared.constants import EXPRESSION_SUPPRESSION_RUL
 from Chatbot.extractors.color.utils.nlp_utils import are_antonyms
 from Chatbot.extractors.color.utils.token_utils import singularize
 from Chatbot.extractors.color.utils.config_loader import load_expression_context_rules
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def get_valid_tokens(text: str, expression_map: Dict) -> List[str]:
     """
     Extracts valid full expression aliases (multi-word or single) from the input text.
     Avoids returning both 'soft' and 'glam' if 'soft glam' is already matched.
     """
-    text_lower = text.lower()
+    text_lower = normalize_token(text)
     matched = set()
 
     all_aliases = set()
@@ -28,7 +30,7 @@ def get_valid_tokens(text: str, expression_map: Dict) -> List[str]:
 
     # Sort aliases by descending length so "soft glam" is matched before "soft"
     for alias in sorted(all_aliases, key=lambda x: -len(x)):
-        alias_lower = alias.lower()
+        alias_lower = normalize_token(alias)
         if re.search(rf"\b{re.escape(alias_lower)}\b", text_lower):
             # Check if it's already part of a longer match
             if not any(alias_lower in longer for longer in matched if alias_lower != longer):
@@ -48,13 +50,13 @@ def extract_alias_matches(text: str, expression_def: dict) -> Set[str]:
     Returns:
         Set[str]: Expression tags like {'elegant', 'romantic'}
     """
-    text_lower = text.lower()
+    text_lower = normalize_token(text)
     tokens = [singularize(tok) for tok in text_lower.split()]
     matched_expressions = set()
 
     for expr, data in expression_def.items():
         for alias in data.get("aliases", []):
-            alias_lower = alias.lower()
+            alias_lower = normalize_token(alias)
 
             # 1. Literal inclusion
             if re.search(rf"\b{re.escape(alias_lower)}\b", text_lower):
@@ -94,7 +96,7 @@ def map_expressions_to_tones(
     debug: bool = True
 ) -> Dict[str, List[str]]:
     results = {}
-    text_lower = text.lower()
+    text_lower = normalize_token(text)
     raw_matched = extract_alias_matches(text, expression_def)
     tokens = [singularize(tok) for tok in text_lower.split()]
     context_map = load_expression_context_rules()
@@ -123,7 +125,7 @@ def map_expressions_to_tones(
 
         matched = [
             alias for alias in aliases
-            if any(alias.lower() in longest_matched_aliases for alias in aliases)
+            if any(normalize_token(alias) in longest_matched_aliases for alias in aliases)
 
         ]
 

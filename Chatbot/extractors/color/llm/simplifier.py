@@ -9,6 +9,8 @@ Also provides suffix fallback logic when direct match fails.
 
 from Chatbot.extractors.color.shared.vocab import known_tones
 from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def simplify_phrase_if_needed(phrase: str, known_modifiers, known_tones, debug=False) -> str:
     if debug:
@@ -29,13 +31,13 @@ def simplify_phrase_if_needed(phrase: str, known_modifiers, known_tones, debug=F
     return phrase
 
 def is_valid_tone(phrase: str, known_tones) -> bool:
-    return phrase.lower() in known_tones
+    return normalize_token(phrase) in known_tones
 
 def extract_suffix_fallbacks(raw_phrase: str, known_modifiers, known_tones, debug=False):
-    lowered = raw_phrase.lower()
+    lowered = normalize_token(raw_phrase)
     for suffix in ("y", "ish"):
         if lowered.endswith(suffix):
-            base = lowered[:-len(suffix)].rstrip("-").strip()
+            base = normalize_token(lowered[:-len(suffix)])
             if len(base) < 3 or not base.isalpha():
                 if debug:
                     print(f"[⛔ INVALID BASE] '{lowered}' → '{base}' (too short or invalid)")

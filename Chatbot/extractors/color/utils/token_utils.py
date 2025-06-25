@@ -15,6 +15,7 @@ Used By:
 from typing import Set, List, Optional
 
 
+
 def split_glued_tokens(
     token: str,
     known_tokens: Set[str],
@@ -34,7 +35,7 @@ def split_glued_tokens(
     Returns:
         List[str]: List of recognized token parts from the input.
     """
-    token = token.lower()
+    token = normalize_token(token)
 
     # Combine bases for suffix generation
     bases_for_suffix = known_modifiers.union(known_tokens)
@@ -126,20 +127,31 @@ def split_glued_tokens(
 def singularize(word: str) -> str:
     """
     Converts plural cosmetic nouns to singular form using simple heuristics.
-
-    - 'lipsticks' → 'lipstick'
-    - 'glosses' → 'gloss'
-    - 'blushes' → 'blush'
-
-    Args:
-        word (str): Input word, possibly plural.
-
-    Returns:
-        str: Singularized version if transformation applies, else unchanged.
     """
-    word = word.lower()
+    word = word.lower()  # just lowercase, no normalize_token here
     if word.endswith("es") and len(word) > 4:
         return word[:-2]
     if word.endswith("s") and len(word) > 3:
         return word[:-1]
     return word
+
+def normalize_token(token: str) -> str:
+    """
+    Normalizes a token for comparison and matching.
+
+    Steps:
+    - Lowercases the string
+    - Strips leading/trailing whitespace
+    - Removes trailing hyphens
+    - Singularizes cosmetic plurals (e.g., 'blushes' → 'blush')
+
+    Args:
+        token (str): Raw input token
+
+    Returns:
+        str: Normalized version
+    """
+    token = token.lower().strip().rstrip("-")
+    token = singularize(token)
+    return token
+

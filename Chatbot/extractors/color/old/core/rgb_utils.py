@@ -21,7 +21,7 @@ from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
 from rapidfuzz import process
 
 from Chatbot.extractors.color.llm.simplifier import simplify_color_description_with_llm
-
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 logger = logging.getLogger(__name__)
 
@@ -148,11 +148,11 @@ def get_rgb_from_descriptive_color_llm_first(input_color: str) -> Optional[Tuple
     if not simplified_list:
         return None
 
-    simplified = simplified_list[0].lower()
+    simplified = normalize_token(simplified_list[0])
 
     # Exact match in XKCD colors
     for name, hex_code in XKCD_COLORS.items():
-        clean_name = name.replace("xkcd:", "").lower()
+        clean_name = normalize_token(name.replace("xkcd:", ""))
         if simplified == clean_name:
             try:
                 return webcolors.hex_to_rgb(hex_code)
@@ -207,7 +207,7 @@ def fuzzy_match_rgb_from_known_colors(color_phrase: str) -> Optional[Tuple[int, 
     Returns:
         Optional[Tuple[int, int, int]]: RGB tuple if match found, else None.
     """
-    simplified = color_phrase.lower()
+    simplified = normalize_token(color_phrase)
 
     try:
         xkcd_names = [name.replace("xkcd:", "") for name in XKCD_COLORS]

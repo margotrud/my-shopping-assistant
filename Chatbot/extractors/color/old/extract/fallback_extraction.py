@@ -11,6 +11,7 @@ Example: 'peachy', 'reddish'
 from typing import List, Set
 import spacy
 from Chatbot.extractors.color.old.core import singularize
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 
 def extract_suffix_fallbacks(
@@ -36,7 +37,7 @@ def extract_suffix_fallbacks(
     results = []
 
     for t in tokens:
-        norm = singularize(t.text.lower())
+        norm = normalize_token(t.text)
 
         if (
             t.pos_ == "ADJ"

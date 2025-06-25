@@ -25,6 +25,7 @@ import spacy
 from Chatbot.extractors.color import known_tones
 from Chatbot.extractors.color.old.core import match_multiword_expressions
 from Chatbot.extractors.general.old.helpers import fuzzy_token_match, get_all_trigger_tokens
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 # ──────────────────────────────────────────────────────────────
 # NLP Setup
@@ -98,7 +99,7 @@ def get_valid_tokens(text: str, trigger_map: Dict[str, List[str]]) -> List[str]:
     print(f"[🧪 TOKENS] → {[f'{t.text} ({t.pos_})' for t in tokens]}")
 
     for token in tokens:
-        word = token.text.lower()
+        word = normalize_token(token.text)
 
         if token.pos_ not in IGNORED_POS:
             cleaned.append(word)
@@ -141,7 +142,7 @@ def find_matching_expressions(text: str, trigger_map: Dict[str, List[str]]) -> L
 
     blocked_tokens = set()
     for phrase in multiword_hits:
-        blocked_tokens.update(phrase.lower().split())
+        blocked_tokens.update(normalize_token(t) for t in phrase.split())
 
     for token in tokens:
 
@@ -308,7 +309,7 @@ def build_tone_modifier_mappings(
     tone_to_modifier = defaultdict(set)
 
     for phrase in phrases:
-        tokens = phrase.lower().split()
+        tokens = [normalize_token(part) for part in phrase.split()]
         matched_tones = [t for t in tokens if t in known_tones]
         matched_modifiers = [t for t in tokens if t in known_modifiers]
 

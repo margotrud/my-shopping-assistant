@@ -15,6 +15,8 @@ from matplotlib.colors import XKCD_COLORS, CSS4_COLORS
 from Chatbot.extractors.color.llm.llm_api_client import query_llm_for_rgb
 from Chatbot.extractors.color.llm.simplifier import simplify_color_description_with_llm
 from Chatbot.extractors.color.utils.rgb_distance import fuzzy_match_rgb_from_known_colors, is_within_rgb_margin
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def resolve_rgb_with_llm(
     phrase: str,
@@ -73,7 +75,7 @@ def _try_simplified_match(name: str, color_names: set, debug=False) -> Optional[
     """
     Attempts to match a simplified phrase directly to known color names in CSS/XKCD.
     """
-    name = name.lower().strip().replace("-", " ")
+    name = normalize_token(name).replace("-", " ")
 
     if name in XKCD_COLORS:
         hex_code = XKCD_COLORS[name]

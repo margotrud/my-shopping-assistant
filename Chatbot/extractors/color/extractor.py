@@ -32,7 +32,7 @@ from Chatbot.extractors.general.old.sentiment import (
     contains_sentiment_splitter_with_segments,
     classify_segments_by_sentiment_no_neutral
 )
-
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 logger = logging.getLogger("ColorPipeline")
 logger.setLevel(logging.DEBUG)
@@ -288,7 +288,7 @@ def resolve_color_conflicts(
     """
 
     def extract_tones(color_name: str) -> Set[str]:
-        return set(color_name.lower().split()) & known_tones
+        return {normalize_token(t) for t in color_name.split()} & known_tones
 
     positive_set = set(positive)
     negative_set = set(negative)

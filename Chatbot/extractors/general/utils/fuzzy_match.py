@@ -22,20 +22,9 @@ from typing import List, Set
 import re
 from fuzzywuzzy import fuzz
 from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
+from Chatbot.extractors.color.utils.token_utils import singularize
 
 
-
-def normalize_token(token: str) -> str:
-    """
-    Standardizes token for comparison: lowercase and strip whitespace.
-
-    Args:
-        token (str): Input string.
-
-    Returns:
-        str: Normalized token.
-    """
-    return token.lower().strip()
 
 
 def fuzzy_token_match(a: str, b: str) -> float:
@@ -66,10 +55,10 @@ def match_expression_aliases(input_text: str, aliases: list, threshold: int = 80
     Returns:
         bool: True if any alias matches input fuzzily, else False.
     """
-    input_text = input_text.lower()
+    input_text = normalize_token(input_text)
 
     for alias in aliases:
-        alias = alias.lower()
+        alias = normalize_token(alias)
 
         score = max(
             fuzz.partial_ratio(alias, input_text),
@@ -92,7 +81,7 @@ def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 
     Returns:
         bool: True if match is confident, else False.
     """
-    score = fuzz.partial_ratio(alias.lower(), input_text.lower())
+    score = fuzz.partial_ratio(normalize_token(alias), normalize_token(input_text))
     return score >= threshold
 
 
@@ -111,8 +100,8 @@ def is_exact_match(a: str, b: str) -> bool:
 
 
 def is_strong_fuzzy_match(a: str, b: str, threshold: int = 85) -> bool:
-    a_norm = a.lower().strip()
-    b_norm = b.lower().strip()
+    a_norm = normalize_token(a)
+    b_norm = normalize_token(b)
 
     if frozenset({a_norm, b_norm}) in SEMANTIC_CONFLICTS:
         return False
@@ -186,8 +175,8 @@ def remove_subsumed_matches(matches: List[str]) -> List[str]:
 
     return filtered
 def is_negation_conflict(a: str, b: str) -> bool:
-    a = a.strip().lower()
-    b = b.strip().lower()
+    a = normalize_token(a)
+    b = normalize_token(b)
 
     return (
         (a.startswith("no ") and a[3:] == b) or

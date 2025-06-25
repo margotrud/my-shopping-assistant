@@ -6,6 +6,9 @@ from Chatbot.extractors.color.old.core import load_known_modifiers
 
 from rapidfuzz import fuzz
 import nltk
+
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 nltk.download("wordnet")
 nltk.download("omw-1.4")
 from nltk.corpus import wordnet
@@ -53,7 +56,7 @@ def split_glued_tokens(token: str, known_tokens: set[str]) -> list[str]:
                    [token] if token is in known_tokens;
                    [] if nothing matched.
     """
-    token = token.lower()
+    token = normalize_token(token)
     n = len(token)
     results = []
 

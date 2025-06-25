@@ -1,7 +1,7 @@
 # tests/extractors/general/utils/test_normalize_token.py
 
 import unittest
-from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+from Chatbot.extractors.color.utils.token_utils import normalize_token
 
 class TestNormalizeToken(unittest.TestCase):
 

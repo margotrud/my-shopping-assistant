@@ -13,6 +13,8 @@ import spacy
 from typing import List, Dict, Tuple
 from transformers import pipeline
 
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 nlp = spacy.load("en_core_web_sm")
 
 # ─────────────────────────────────────────────
@@ -95,7 +97,7 @@ def contains_sentiment_splitter_with_segments(text: str) -> Tuple[bool, List[str
 
 def should_skip_split_due_to_or_negation(doc) -> bool:
     has_neg = any(tok.dep_ == "neg" for tok in doc)
-    has_or = any(tok.text.lower() == "or" for tok in doc)
+    has_or = any(normalize_token(tok.text)== "or" for tok in doc)
     has_punct = any(tok.text in {".", ",", ";"} for tok in doc)
     return has_neg and has_or and not has_punct
 

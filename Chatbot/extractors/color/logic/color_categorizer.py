@@ -9,6 +9,8 @@ Builds bidirectional mappings between tone keywords and modifier keywords.
 from typing import List, Set, Tuple, Dict
 from collections import defaultdict
 
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def build_tone_modifier_mappings(
         phrases: List[str],
@@ -49,7 +51,7 @@ def build_tone_modifier_mappings(
     tone_to_mod = defaultdict(set)
 
     for phrase in phrases:
-        parts = phrase.lower().split()
+        parts = [normalize_token(t) for t in phrase.split()]
         if len(parts) != 2:
             continue
 

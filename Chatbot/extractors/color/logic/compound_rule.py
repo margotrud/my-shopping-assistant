@@ -23,6 +23,7 @@ Dependencies:
 
 from typing import Set, Tuple
 from Chatbot.extractors.color.shared.constants import BLOCKED_TOKENS
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
 
 
 def is_blocked_modifier_tone_pair(
@@ -45,6 +46,6 @@ def is_blocked_modifier_tone_pair(
     Returns:
         bool: True if either (modifier, tone) or (tone, modifier) is blocked.
     """
-    pair = (modifier.lower(), tone.lower())
-    reverse = (tone.lower(), modifier.lower())
+    pair = (normalize_token(modifier), normalize_token(tone))
+    reverse = (normalize_token(tone), normalize_token(modifier))
     return pair in blocked_pairs or reverse in blocked_pairs

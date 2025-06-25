@@ -10,6 +10,8 @@ from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_
 from Chatbot.extractors.color.llm.llm_rgb import resolve_rgb_with_llm
 from Chatbot.extractors.color.llm.simplifier import simplify_phrase_if_needed
 from Chatbot.extractors.color.llm.simplifier import simplify_color_description_with_llm
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+
 
 def process_color_phrase(
     phrase,
@@ -71,7 +73,7 @@ def resolve_fallback_tokens(tokens, known_modifiers, known_tones, debug=False):
     """
     resolved = set()
     for tok in tokens:
-        raw = tok.text.lower()
+        raw = normalize_token(tok.text)
         if raw in known_tones:
             resolved.add(raw)
             continue
