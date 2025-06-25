@@ -22,9 +22,7 @@ from typing import List, Set
 import re
 from fuzzywuzzy import fuzz
 from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
-from Chatbot.extractors.color.utils.token_utils import singularize
-
-
+from Chatbot.extractors.color.utils.token_utils import singularize, normalize_token
 
 
 def fuzzy_token_match(a: str, b: str) -> float:

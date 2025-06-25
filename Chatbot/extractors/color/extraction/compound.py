@@ -110,33 +110,108 @@ def split_tokens_to_parts(text, known_color_tokens):
 
     return None
 
+def extract_from_glued(
+    tokens,
+    compounds,
+    raw_compounds,
+    known_color_tokens,
+    known_modifiers,
+    known_tones,
+    all_webcolor_names,
+    debug=True
+):
+    """
+    Attempts to extract compound color phrases from single glued tokens.
 
-
-def extract_from_glued(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug=False):
+    Args:
+        tokens: spaCy tokenized Doc
+        compounds: Set[str] to collect final compounds (e.g., "dusty rose")
+        raw_compounds: List[str] for unfiltered raw compound results
+        known_color_tokens: Union of all color vocab (modifiers, tones, webcolors)
+        known_modifiers: Set of known modifiers
+        known_tones: Set of known tones
+        all_webcolor_names: Set of web-safe color names
+        debug: Whether to print debug output
+    """
     for token in tokens:
-        raw = normalize_token(token.text)
-        if any(raw in c.replace(" ", "") for c in compounds):
-            if debug:
-                print(f"[⛔ SKIPPED GLUED TOKEN] '{raw}' already detected")
+        if debug:
+            print("[🧪 TOKENS RECEIVED]", [t.text for t in tokens])
+
+        raw = token.text.lower()
+        if raw in known_color_tokens:
+            print(f"[⛔ SKIP: known token] {raw}")
+        elif not raw.isalpha():
+            print(f"[⛔ SKIP: non-alpha] {raw}")
+        else:
+            print(f"[✅ ANALYZE] {raw}")
+
+        if raw in known_color_tokens or not raw.isalpha():
             continue
 
-        parts = split_glued_tokens(raw, known_color_tokens)
         if debug:
-            print(f"[🔬 SPLIT GLUED TOKEN] '{raw}' → {parts}")
+            print(f"\n🔍 Starting split for: '{raw}'")
+            print(f"📦 Augmented vocab size: {len(known_color_tokens)}")
+
+        parts = split_glued_tokens(raw, known_color_tokens, known_modifiers)
+
+        # 🪄 Fallback split if token starts with known color
+        if parts == [raw]:
+            for tok in known_color_tokens:
+                if raw.startswith(tok) and len(tok) >= 4:
+                    remainder = raw[len(tok):]
+                    if remainder:
+                        parts = [tok, remainder]
+                        if debug:
+                            print(f"🪄 Fallback split at '{tok}': {parts}")
+                        break
+
         if len(parts) != 2:
             continue
 
         mod_candidate, tone_candidate = parts
-        mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones)
-        is_valid = tone_candidate in known_tones or tone_candidate in all_webcolor_names
-        original_form = mod_candidate + tone_candidate
 
-        if mod and is_valid and original_form in raw:
-            compound = f"{mod} {tone_candidate}"
+        # Direct modifier resolution
+        mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones, is_tone=False, debug=debug)
+        is_valid = (
+                tone_candidate in known_tones
+                or tone_candidate in known_modifiers
+                or tone_candidate in all_webcolor_names
+        )
+
+        both_valid = (
+            mod_candidate in known_modifiers and
+            tone_candidate in known_tones
+        )
+
+        # Accept tone+tone combinations directly
+        both_are_valid_tones = mod_candidate in known_tones and tone_candidate in known_tones
+
+        if both_are_valid_tones or (mod and is_valid) or both_valid:
+            compound = f"{mod or mod_candidate} {tone_candidate}"
             if debug:
-                print(f"[🧪 GLUED COMPOUND] '{raw}' → '{compound}'")
+                print(f"[✅ COMPOUND FOUND] '{raw}' → '{compound}'")
             compounds.add(compound)
             raw_compounds.append(compound)
+            continue
+
+        # 💥 Force-add fallback compound
+        compound = f"{mod_candidate} {tone_candidate}"
+        if debug:
+            print(f"[🔥 FORCE ADD] '{raw}' → '{compound}' (fallback accepted)")
+        compounds.add(compound)
+        raw_compounds.append(compound)
+
+
+def fallback_split(raw, known_color_tokens, debug=False):
+    for i in range(3, len(raw) - 2):
+        left, right = normalize_token(raw[:i]), normalize_token(raw[i:])
+        if left in known_color_tokens and right in known_color_tokens:
+            if debug:
+                print(f"🪄 Fallback split at '{left}': ['{left}', '{right}']")
+            return f"{left} {right}"
+    return None
+
+
 
 
 def extract_from_split(tokens, compounds, raw_compounds, known_color_tokens, known_modifiers, known_tones, all_webcolor_names, debug=False):
