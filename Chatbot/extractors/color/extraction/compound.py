@@ -38,76 +38,88 @@ def extract_compound_phrases(
 
 
 
-def extract_from_adjacent(tokens, compounds, raw_compounds, known_modifiers, known_tones, debug=True):
+def extract_from_adjacent(
+    tokens,
+    compounds,
+    raw_compounds,
+    known_modifiers,
+    known_tones,
+    debug=True
+):
+    """
+    Extracts compound color phrases from adjacent token pairs (e.g., "muted rose").
+    Accepts a modifier followed by a tone.
+    """
     for i in range(len(tokens) - 1):
         raw_mod = tokens[i].text.lower()
-        raw_tone = tokens[i + 1].text.lower()
+        raw_tone = singularize(tokens[i + 1].text.lower())
 
         if debug:
             print(f"\n[🔍 ADJACENT PAIR] '{raw_mod}' + '{raw_tone}'")
 
-        # Modifier resolution: try exact match first
-        if raw_mod in known_modifiers or raw_mod in known_tones:
-            mod = raw_mod
-            if debug:
-                print(f"[✅ MODIFIER MATCH] '{raw_mod}' accepted (modifier or tone)")
+        mod = resolve_modifier_token(raw_mod, known_modifiers, known_tones, is_tone=False, debug=debug)
+        tone = raw_tone if raw_tone in known_tones else None
 
-        elif raw_mod.endswith(("y", "ish")):
-            fallback = raw_mod.rstrip("y").rstrip("ish")
-            mod = fallback if fallback in known_modifiers else None
-            if debug:
-                if mod:
-                    print(f"[🔁 MODIFIER SUFFIX] '{raw_mod}' → '{mod}'")
-                else:
-                    print(f"[⛔ MODIFIER FAIL] '{raw_mod}' not found, even after suffix")
-        else:
-            mod = None
-            if debug:
-                print(f"[⛔ MODIFIER FAIL] '{raw_mod}' not found")
-
-        # Tone resolution: singularize and check
-        tone = singularize(raw_tone)
-        if tone in known_tones:
-            if debug:
-                print(f"[✅ TONE MATCH] '{raw_tone}' → '{tone}' accepted as tone")
-        else:
-            if debug:
-                print(f"[⛔ TONE FAIL] '{raw_tone}' → '{tone}' not in known tones")
-            tone = None
-
-        # Final compound
         if mod and tone:
             phrase = f"{mod} {tone}"
             if phrase not in compounds:
                 if debug:
-                    print(f"[🧱 COMPOUND ADDED] → '{phrase}'")
+                    print(f"[✅ ADJACENT COMPOUND ADDED] → '{phrase}'")
                 compounds.add(phrase)
                 raw_compounds.append(phrase)
-            else:
-                if debug:
-                    print(f"[🔁 SKIPPED DUPLICATE] '{phrase}' already added")
 
 
 
-def split_tokens_to_parts(text, known_color_tokens):
-    print(f"\n[🔍 SPLIT START] Input: '{text}'")
+def split_tokens_to_parts(
+    text: str,
+    known_color_tokens: set,
+    debug: bool = False
+) -> list[str] | None:
+    """
+    Attempts to split a single token into two known color components.
 
+    Handles cases like:
+    - 'dusty-rose' → ['dusty', 'rose']
+    - 'softpink' → ['soft', 'pink']
+
+    Args:
+        text (str): The raw glued token.
+        known_color_tokens (set): All known color vocab.
+        debug (bool): If True, enables detailed logging.
+
+    Returns:
+        list[str] | None: A [modifier, tone] split or None if invalid.
+    """
+    if debug:
+        print(f"\n[🔍 SPLIT START] Input: '{text}'")
+
+    # First check for dash-based splits
     if "-" in text:
         parts = text.split("-", 1)
-        if all(p in known_color_tokens for p in parts):
+        if all(part in known_color_tokens for part in parts):
+            if debug:
+                print(f"[✅ DASH SPLIT] '{text}' → {parts}")
             return parts
 
+    # Try recursive character-level splits
     for i in reversed(range(2, len(text) - 2)):
         left, right = text[:i], text[i:]
 
         resolved_left = match_suffix_fallback(left, known_color_tokens) or left
         resolved_right = match_suffix_fallback(right, known_color_tokens) or right
 
-        print(f"[🔍 TRY] '{left}' + '{right}' → resolved: '{resolved_left}', '{resolved_right}'")
+        if debug:
+            print(f"[🔍 TRY] '{left}' + '{right}' → resolved: '{resolved_left}', '{resolved_right}'")
 
         if resolved_left in known_color_tokens and resolved_right in known_color_tokens:
-            return [normalize_token(left), normalize_token(right)]
+            left_norm = normalize_token(left)
+            right_norm = normalize_token(right)
+            if debug:
+                print(f"[✅ SPLIT SUCCESS] '{text}' → ['{left_norm}', '{right_norm}']")
+            return [left_norm, right_norm]
 
+    if debug:
+        print(f"[⛔ NO SPLIT FOUND] '{text}'")
     return None
 
 def extract_from_glued(
@@ -121,95 +133,73 @@ def extract_from_glued(
     debug=True
 ):
     """
-    Attempts to extract compound color phrases from single glued tokens.
+    Extracts compounds from single glued tokens (e.g., 'dustyrose', 'subtlealmond', 'purepearl').
 
-    Args:
-        tokens: spaCy tokenized Doc
-        compounds: Set[str] to collect final compounds (e.g., "dusty rose")
-        raw_compounds: List[str] for unfiltered raw compound results
-        known_color_tokens: Union of all color vocab (modifiers, tones, webcolors)
-        known_modifiers: Set of known modifiers
-        known_tones: Set of known tones
-        all_webcolor_names: Set of web-safe color names
-        debug: Whether to print debug output
+    Accepts:
+    - modifier + tone (e.g., 'subtlealmond')
+    - tone + tone     (e.g., 'greylavender')
+    - known_modifier + tone (fallback)
+    - modifier + modifier (e.g., 'purepearl')
     """
     for token in tokens:
-        if debug:
-            print("[🧪 TOKENS RECEIVED]", [t.text for t in tokens])
-
         raw = token.text.lower()
-        if raw in known_color_tokens:
-            print(f"[⛔ SKIP: known token] {raw}")
-        elif not raw.isalpha():
-            print(f"[⛔ SKIP: non-alpha] {raw}")
-        else:
-            print(f"[✅ ANALYZE] {raw}")
 
-        if raw in known_color_tokens or not raw.isalpha():
+        if not raw.isalpha() or raw in known_color_tokens:
+            if debug:
+                print(f"[⛔ SKIP] Token '{raw}' is known or non-alpha")
             continue
-
-        if debug:
-            print(f"\n🔍 Starting split for: '{raw}'")
-            print(f"📦 Augmented vocab size: {len(known_color_tokens)}")
 
         parts = split_glued_tokens(raw, known_color_tokens, known_modifiers)
 
-        # 🪄 Fallback split if token starts with known color
-        if parts == [raw]:
-            for tok in known_color_tokens:
-                if raw.startswith(tok) and len(tok) >= 4:
-                    remainder = raw[len(tok):]
-                    if remainder:
-                        parts = [tok, remainder]
-                        if debug:
-                            print(f"🪄 Fallback split at '{tok}': {parts}")
-                        break
-
-        if len(parts) != 2:
+        if not parts or len(parts) != 2:
             continue
 
         mod_candidate, tone_candidate = parts
 
-        # Direct modifier resolution
         mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones, is_tone=False, debug=debug)
-        is_valid = (
-                tone_candidate in known_tones
-                or tone_candidate in known_modifiers
-                or tone_candidate in all_webcolor_names
-        )
+        is_valid_tone = tone_candidate in known_tones or tone_candidate in all_webcolor_names
+        tone_pair = mod_candidate in known_tones and tone_candidate in known_tones
+        mod_fallback = mod_candidate in known_modifiers and is_valid_tone
+        mod_mod_pair = mod_candidate in known_modifiers and tone_candidate in known_modifiers
 
-        both_valid = (
-            mod_candidate in known_modifiers and
-            tone_candidate in known_tones
-        )
-
-        # Accept tone+tone combinations directly
-        both_are_valid_tones = mod_candidate in known_tones and tone_candidate in known_tones
-
-        if both_are_valid_tones or (mod and is_valid) or both_valid:
-            compound = f"{mod or mod_candidate} {tone_candidate}"
+        # 1. modifier resolved + valid tone
+        if mod and is_valid_tone:
+            compound = f"{mod} {tone_candidate}"
             if debug:
-                print(f"[✅ COMPOUND FOUND] '{raw}' → '{compound}'")
+                print(f"[✅ GLUED MOD+TONE] '{raw}' → '{compound}'")
             compounds.add(compound)
             raw_compounds.append(compound)
             continue
 
-        # 💥 Force-add fallback compound
-        compound = f"{mod_candidate} {tone_candidate}"
-        if debug:
-            print(f"[🔥 FORCE ADD] '{raw}' → '{compound}' (fallback accepted)")
-        compounds.add(compound)
-        raw_compounds.append(compound)
-
-
-def fallback_split(raw, known_color_tokens, debug=False):
-    for i in range(3, len(raw) - 2):
-        left, right = normalize_token(raw[:i]), normalize_token(raw[i:])
-        if left in known_color_tokens and right in known_color_tokens:
+        # 2. known modifier + known tone (fallback)
+        elif mod_fallback:
+            compound = f"{mod_candidate} {tone_candidate}"
             if debug:
-                print(f"🪄 Fallback split at '{left}': ['{left}', '{right}']")
-            return f"{left} {right}"
-    return None
+                print(f"[✅ GLUED MOD+TONE (fallback)] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
+
+        # 3. tone + tone
+        elif tone_pair:
+            compound = f"{mod_candidate} {tone_candidate}"
+            if debug:
+                print(f"[✅ GLUED TONE+TONE] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
+
+        # 4. modifier + modifier
+        elif mod_mod_pair:
+            compound = f"{mod_candidate} {tone_candidate}"
+            if debug:
+                print(f"[✅ GLUED MOD+MOD] '{raw}' → '{compound}'")
+            compounds.add(compound)
+            raw_compounds.append(compound)
+            continue
+
+
+
 
 
 
@@ -224,61 +214,32 @@ def extract_from_split(
     all_webcolor_names,
     debug=False
 ):
-
+    """
+    Attempts to recover compound phrases from mis-tokenized or corrupted inputs.
+    Works on tokens like 'dustyrose', 'taupeybeige', etc.
+    """
     for token in tokens:
-
         text = token.text.lower()
-        if text in known_color_tokens:
-            continue
-        if any(text in c.replace(" ", "") for c in compounds):
+        if text in known_color_tokens or any(text in c.replace(" ", "") for c in compounds):
             continue
 
         if debug:
-            print(f"\n[🔍 SPLIT START] Input: '{text}'")
+            print(f"\n[🔍 SPLIT CANDIDATE] '{text}'")
 
         parts = split_tokens_to_parts(text, known_color_tokens)
         if not parts or len(parts) != 2:
             if debug:
-                print(f"[⛔ INVALID SPLIT] → {parts}")
+                print(f"[⛔ INVALID SPLIT] {parts}")
             continue
 
         mod_candidate, tone_candidate = parts
+        mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones, is_tone=False, debug=debug)
+        is_valid_tone = tone_candidate in known_tones or tone_candidate in all_webcolor_names
 
-        # Try resolving modifier
-        mod = resolve_modifier_token(mod_candidate, known_modifiers, known_tones)
-
-        # 👇 STRONG FALLBACK: try cleaning suffixes manually
-        if not mod:
-            if mod_candidate in known_tones:
-                mod = mod_candidate
-                if debug:
-                    print(f"[⚠️ DIRECT TONE FALLBACK] '{mod_candidate}' accepted as modifier")
-            else:
-                base = None
-                if mod_candidate.endswith("y"):
-                    base = mod_candidate[:-1]
-                elif mod_candidate.endswith("ish"):
-                    base = mod_candidate[:-3]
-
-                if base and (base in known_tones or base in known_modifiers):
-                    mod = base
-                    if debug:
-                        print(f"[⚠️ SUFFIX FALLBACK] '{mod_candidate}' → '{base}'")
-
-                    if debug:
-                        print(f"[⚠️ SUFFIX FALLBACK] '{mod_candidate}' → '{base}'")
-
-        # Check tone validity
-        is_valid = tone_candidate in known_tones or tone_candidate in all_webcolor_names
-
-        if debug:
-            print(f"[🧪 DEBUG CHECK] mod_candidate='{mod_candidate}' → resolved='{mod}'")
-            print(f"[🧪 DEBUG CHECK] tone_candidate='{tone_candidate}' → is_valid={is_valid}")
-
-        if mod and is_valid:
+        if mod and is_valid_tone:
             compound = f"{mod} {tone_candidate}"
             if debug:
-                print(f"[🧪 SPLIT COMPOUND] '{text}' → '{compound}'")
+                print(f"[✅ SPLIT COMPOUND] '{text}' → '{compound}'")
             compounds.add(compound)
             raw_compounds.append(compound)
 
