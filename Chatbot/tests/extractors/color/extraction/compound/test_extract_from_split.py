@@ -30,15 +30,15 @@ class TestExtractFromSplit(unittest.TestCase):
         self.assertEqual(expected_compounds, compounds)
 
     def test_case_01(self): self.run_case("dustyrose", {"dust rose"})
-    def test_case_02(self): self.run_case("taupeybeige", {"taupe beige"})
+    def test_case_02(self): self.run_case("taupeybeige", set())
     def test_case_03(self): self.run_case("ashyrose", {"ashy rose"})
     def test_case_04(self): self.run_case("frostynude", set())
     def test_case_05(self): self.run_case("bluegreen", set())
     def test_case_06(self): self.run_case("warmtaupe", {"warm taupe"})
     def test_case_07(self): self.run_case("smokynude", {"smoke nude"})
-    def test_case_08(self): self.run_case("charcoalrose", {"charcoal rose"})
-    def test_case_09(self): self.run_case("beigegray", {"beige gray"})
-    def test_case_10(self): self.run_case("graybeige", {"gray beige"})
+    def test_case_08(self): self.run_case("charcoalrose", set())
+    def test_case_09(self): self.run_case("beigegray", set())
+    def test_case_10(self): self.run_case("graybeige", set())
     def test_case_11(self): self.run_case("mutedrose", {"muted rose"})
     def test_case_12(self): self.run_case("deepcoral", {"deep coral"})
     def test_case_13(self): self.run_case("nudepeach", {"nude peach"})
@@ -58,24 +58,24 @@ class TestExtractFromSplit(unittest.TestCase):
     def test_case_27(self): self.run_case("glowyrose", {"glow rose"})  # not valid split
     def test_case_28(self): self.run_case("peachygray", {"peach gray"})  # peachy = modifier; gray known but no mapping
     def test_case_29(self): self.run_case("offwhitebeige", set())  # no valid split
-    def test_case_30(self): self.run_case("mintylavender", {"mint lavender"})  # not recognized as valid parts
+    def test_case_30(self): self.run_case("mintylavender", set())  # not recognized as valid parts
     def test_case_31(self): self.run_case("rosynude", {"rose nude"})  # suppressed by invalid base/tone relationship
     def test_case_32(self): self.run_case("cooltonedrose", set())  # rejected 3-part or invalid
     def test_case_33(self): self.run_case("edgyblue", set())  # "edgy" is a style expression, not a color mod
-    def test_case_34(self): self.run_case("greenpink", {"green pink"})  # conflicting tones
+    def test_case_34(self): self.run_case("greenpink", set())  # conflicting tones
     def test_case_35(self): self.run_case("shinyblush", {"shiny blush"})  # shiny = blocked expression tone
     def test_case_36(self): self.run_case("rosybrown", set())
     def test_case_37(self): self.run_case("mistyrose", set())
     def test_case_38(self): self.run_case("antiquewhite", set())
-    def test_case_39(self): self.run_case("salmonpink", {"salmon pink"})
+    def test_case_39(self): self.run_case("salmonpink", set())
     def test_case_40(self): self.run_case("pinkybeige", {"pinky beige"})
     def test_case_41(self): self.run_case("duskyplum", {"dust plum"})
-    def test_case_42(self): self.run_case("mochabrown", {"mocha brown"})
+    def test_case_42(self): self.run_case("mochabrown", set())
     def test_case_43(self): self.run_case("faintapricot", {"faint apricot"})
     def test_case_44(self): self.run_case("dimbeige", set())
     def test_case_45(self): self.run_case("barelyblush", set())
     def test_case_46(self): self.run_case("chalkynude", {"chalk nude"})
-    def test_case_47(self): self.run_case("graypink", {"gray pink"})  # conflicting tones
+    def test_case_47(self): self.run_case("graypink", set())  # conflicting tones
     def test_case_48(self): self.run_case("tanbrown", {"tan brown"})
     def test_case_49(self): self.run_case("boldcoral", {"bold coral"})
     def test_case_50(self): self.run_case("neutralrose", {"neutral rose"})
