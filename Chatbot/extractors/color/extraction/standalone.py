@@ -50,12 +50,31 @@ def _finalize_standalone_phrases(injected, filtered, debug):
         print(f"[✅ FINAL STANDALONE SET] {combined}")
     return combined
 def extract_lone_tones(tokens, known_tones, debug=False):
+    """
+    Extracts standalone tone tokens directly from token stream.
+
+    This version:
+    - Uses normalize_token() for cleanup
+    - Skips cosmetic product nouns (e.g., 'lipstick', 'blush')
+    - Accepts any token directly in known_tones
+
+    Args:
+        tokens (List[spacy.tokens.Token]): spaCy tokens
+        known_tones (Set[str]): Tone vocabulary
+        debug (bool): If True, prints debug info
+
+    Returns:
+        Set[str]: Set of matched tone tokens
+    """
     matches = set()
     for tok in tokens:
         raw = normalize_token(tok.text)
+        if raw in COSMETIC_NOUNS:
+            if debug:
+                print(f"[⛔ COSMETIC BLOCK] '{raw}' blocked")
+            continue
         if raw in known_tones:
             matches.add(raw)
             if debug:
                 print(f"[🎯 LONE TONE] Found '{raw}'")
     return matches
-
