@@ -141,11 +141,10 @@ def normalize_token(token: str) -> str:
     Normalizes a token for comparison and matching.
 
     - Lowercases
-    - Strips whitespace
-    - Removes all hyphens (not just trailing)
+    - Strips surrounding whitespace
+    - Replaces hyphens and underscores with spaces
     - Singularizes cosmetic plurals
     """
-    token = token.lower().replace("-", "").strip()
+    token = token.lower().strip().replace("-", " ").replace("_", " ")
     token = singularize(token)
     return token
-

@@ -8,8 +8,9 @@ including simplified and injected expressions.
 """
 
 from Chatbot.extractors.color.shared.constants import COSMETIC_NOUNS
+from Chatbot.extractors.color.utils.config_loader import load_json_from_data_dir
 from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, fuzzy_match_modifier_safe
-from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
+from Chatbot.extractors.general.utils.fuzzy_match import normalize_token, match_expression_aliases
 
 
 def extract_standalone_phrases(tokens, known_modifiers, known_tones, debug=False):
@@ -54,57 +55,62 @@ def is_suffix_variant(word: str, base: str, debug=False) -> bool:
         print(f"[❌ NOT A SUFFIX VARIANT] (word='{word}', base='{base}')")
     return False
 
+
 def _inject_expression_modifiers(tokens, known_modifiers, debug):
+    """
+    Injects modifier terms from matched style expressions and direct token matching.
+
+    - Detects expression aliases using match_expression_aliases().
+    - Injects known modifiers tied to expressions (e.g., "romantic" → ["soft", "rosy"]).
+    - Also directly adds tokens that match known_modifiers via fuzzy match.
+
+    Args:
+        tokens (List[spacy.tokens.Token]): spaCy tokens
+        known_modifiers (Set[str]): Known modifiers
+        debug (bool): If True, prints debug logs
+
+    Returns:
+        Set[str]: Injected modifier terms
+    """
     injected = set()
+    text = " ".join([t.text for t in tokens]).lower()
+
+    # ─── Load expressions
+    expression_def = load_json_from_data_dir("expression_definition.json")
+    matched = match_expression_aliases(text, expression_def)
+    if not isinstance(matched, set):
+        matched = set()
+
+    if debug:
+        print(f"[🧠 MATCHED EXPRESSIONS] {matched}")
+
+    for expr in matched:
+        mods = expression_def.get(expr, {}).get("modifiers", [])
+        valid = [m for m in mods if m in known_modifiers]
+        if debug:
+            print(f"[🎯 INJECTED] '{expr}' → {valid}")
+        injected.update(valid)
+
+    # ─── Direct + fuzzy token resolution
     for tok in tokens:
-        print(f"[TOKEN LOOP] Raw token: '{tok.text}' | POS={tok.pos_} | TAG={tok.tag_}")
-
         word = normalize_token(tok.text)
-        print(f"[🔍 NORMALIZED] '{tok.text}' → '{word}' | In known_modifiers? → {word in known_modifiers}")
+        if tok.pos_ == "NOUN" and word in COSMETIC_NOUNS:
+            if debug:
+                print(f"[⛔ SKIP] '{word}' (cosmetic noun)")
+            continue
 
-        # ✅ Always allow fuzzy attempts for PROPN or VERB too
-        if (
-            tok.pos_ in {"ADJ", "NOUN"} or
-            tok.tag_ in {"VBN", "VBD"} or
-            tok.pos_ == "VERB" or
-            tok.pos_ == "PROPN"
-        ):
-            print(f"\n[🧪 CHECKING] Token: '{tok.text}' → normalized: '{word}'")
-
-            if tok.pos_ == "NOUN" and word in COSMETIC_NOUNS:
+        if word in known_modifiers:
+            injected.add(word)
+            if debug:
+                print(f"[✅ DIRECT] '{word}'")
+        else:
+            fuzzy = fuzzy_match_modifier_safe(word, known_modifiers)
+            if fuzzy:
+                injected.add(fuzzy)
                 if debug:
-                    print(f"[⛔ SKIP] Token '{word}' is a cosmetic noun → blocked")
-                continue
-
-            # ✅ Direct match
-            if word in known_modifiers:
-                injected.add(word)
-                print(f"[🎯 INJECTED] '{word}' (direct match in known_modifiers)")
-
-            # ✅ Fuzzy match fallback
-            else:
-                fuzzy = fuzzy_match_modifier_safe(word, known_modifiers, threshold=85)
-                print(f"[DEBUG] Best match: '{fuzzy}' with score 85" if fuzzy else "[❌ NO FUZZY MATCH FOUND]")
-
-                if fuzzy:
-                    distance = levenshtein_distance(fuzzy, word)
-                    suffix_ok = is_suffix_variant(word, fuzzy, debug=True)
-
-                    print(f"[📐 LEVENSHTEIN] '{word}' vs '{fuzzy}' → {distance}")
-                    print(f"[🔎 FINAL DECISION FLAGS] fuzzy='{fuzzy}' | dist={distance} | suffix_ok={suffix_ok}")
-
-                    if (
-                        fuzzy == word or
-                        (suffix_ok and distance <= 2) or
-                        (not suffix_ok and 2 <= distance <= 3)
-                    ):
-                        injected.add(fuzzy)
-                        print(f"[🎯 INJECTED] '{word}' (fuzzy → '{fuzzy}', dist={distance}, suffix_ok={suffix_ok})")
-                    else:
-                        print(f"[⛔ SKIPPED] '{word}' (fuzzy='{fuzzy}', dist={distance}, suffix_ok={suffix_ok})")
+                    print(f"[✨ FUZZY] '{word}' → '{fuzzy}'")
 
     return injected
-
 
 def _extract_filtered_tokens(tokens, known_modifiers, known_tones, debug):
     result = set()

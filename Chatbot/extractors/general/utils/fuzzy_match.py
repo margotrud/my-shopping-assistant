@@ -40,33 +40,113 @@ def fuzzy_token_match(a: str, b: str) -> float:
     bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
 
     return min(100, round((partial + ratio) / 2 + bonus))
-def match_expression_aliases(input_text: str, aliases: list, threshold: int = 80) -> bool:
+
+from Chatbot.extractors.color.utils.token_utils import normalize_token
+from fuzzywuzzy import fuzz
+
+def fuzzy_fallback_unmatched_tokens(original_tokens, expression_map, matched_expressions, consumed_spans, threshold=90, debug=False):
+    for idx, raw_token in enumerate(original_tokens):
+        if idx in consumed_spans:
+            continue  # already matched
+
+        for expression, props in expression_map.items():
+            for alias in props.get("aliases", []):
+                alias_words = alias.lower().split()
+                if len(alias_words) == 1:
+                    score = fuzz.ratio(raw_token.lower(), alias_words[0])
+                    if score >= threshold:
+                        matched_expressions.add(expression)
+                        if debug:
+                            print(f"[🌀 FUZZY MATCH] '{raw_token}' ~ '{alias_words[0]}' ({score}) → Expression: '{expression}'")
+                        break
+
+def match_expression_aliases(text: str, expression_map: dict, debug: bool = False) -> set[str]:
     """
-    Determines if user input fuzzily matches any known expression alias.
-    Uses both partial and token sort ratio for robust matching.
+    Matches known expression aliases to user input using:
+    - Literal span match (multi-word or token-by-token)
+    - Normalized token match
+    - Fuzzy fallback on raw tokens (only if nothing matched literally)
 
     Args:
-        input_text (str): User input (not necessarily lowercase).
-        aliases (List[str]): List of known aliases for an expression.
-        threshold (int): Minimum fuzzy score to count as match.
+        text (str): Raw user input, e.g., "barely there glam"
+        expression_map (dict): Expression → alias list
+        debug (bool): Whether to print debug info
 
     Returns:
-        bool: True if any alias matches input fuzzily, else False.
+        set[str]: Expressions matched (e.g., {"natural", "soft glam"})
     """
-    input_text = normalize_token(input_text)
+    from Chatbot.extractors.color.utils.token_utils import normalize_token
 
-    for alias in aliases:
-        alias = normalize_token(alias)
+    tokens = text.lower().split()
+    matched_expressions = set()
+    seen_aliases = set()
 
-        score = max(
-            fuzz.partial_ratio(alias, input_text),
-            fuzz.token_sort_ratio(alias, input_text)
-        )
+    if debug:
+        print(f"[🧪 INPUT TEXT] → '{text}'")
+        print(f"[🧬 TOKENS] → {tokens}")
+        print(f"[📂 TOTAL EXPRESSIONS] → {len(expression_map)}")
 
-        if score >= threshold:
-            return True
+    for expression, aliases in expression_map.items():
+        if debug:
+            print(f"\n🔍 [CHECKING EXPRESSION] '{expression}' with {len(aliases)} aliases")
 
-    return False
+        for alias in aliases:
+            alias_tokens = alias.lower().split()
+            n = len(alias_tokens)
+
+            # Try literal match at each span
+            for i in range(len(tokens) - n + 1):
+                window = tokens[i:i+n]
+                if window == alias_tokens:
+                    matched_expressions.add(expression)
+                    seen_aliases.add(alias)
+                    if debug:
+                        print(f"✅ [MATCH] Alias '{alias}' at span ({i}, {i+n}) → {window}")
+                    break
+
+    # Build token-to-expression fuzzy fallbacks (if nothing literal matched)
+    if debug:
+        print("\n[🌀 FUZZY FALLBACK STARTED]")
+
+    for token in tokens:
+        norm = normalize_token(token)
+
+        for expression, aliases in expression_map.items():
+            for alias in aliases:
+                alias_norm = normalize_token(alias)
+
+                # 🧷 Safeguard: avoid matching a short alias if token embeds it
+                if len(alias.split()) == 1 and alias in token and len(token) > len(alias) + 3:
+                    if debug:
+                        print(f"[⛔ SKIP: alias too short for glue token] '{token}' ~ '{alias}'")
+                    continue
+
+                score = fuzzy_token_match(norm, alias_norm)
+                if score >= 100:
+                    matched_expressions.add(expression)
+                    if debug:
+                        print(f"🌀 [FUZZY FALLBACK] '{token}' ~ '{alias}' → {expression} (score={score})")
+
+    # 🔁 Try splitting glued tokens like 'softglam'
+    for token in tokens:
+        for expression, aliases in expression_map.items():
+            for alias in aliases:
+                if " " not in alias:
+                    continue  # Only check compound aliases
+
+                parts = alias.lower().split()
+                joined = "".join(parts)
+                if token == joined:
+                    matched_expressions.add(expression)
+                    if debug:
+                        print(f"🧩 [GLUED MATCH] '{token}' → '{alias}' → {expression}")
+
+    if debug:
+        print(f"\n[🎯 FINAL MATCHED EXPRESSIONS] → {matched_expressions}")
+
+    return matched_expressions
+
+
 def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 85) -> bool:
     """
     Evaluates whether a multi-word alias should be accepted as a match based on fuzzy similarity.

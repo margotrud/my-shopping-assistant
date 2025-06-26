@@ -4,7 +4,7 @@
       "luminous", "matte", "minimalist", "medium-light", "muted", "natural", "neutral",  "neutral-cool", "neutral-toned",
       "neutral-warm", "off-white", "opaque", "pastel", "peachy", "pinky", "powdery", "rosy", "satin", "sheer", "silky",
       "soft", "soft-focus", "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
-    "aliases": ["casual", "everyday", "office", "work-appropriate", "daily", "daytime"]
+    "aliases": ["casual", "everyday", "office", "work-appropriate", "daily", "daytime", "no makeup"]
   },
   "earthy": {
   "modifiers": ["ashy", "bare", "barely-there", "bronzed", "brownish", "creamy", "dusty", "fair", "ivory", "light",
@@ -56,7 +56,7 @@
       "medium-light", "minimalist", "muted", "natural", "neutral", "neutral-cool", "neutral-toned", "neutral-warm", "off-white",
       "opaque", "peachy", "pinkish", "pinky", "powdery", "rosy", "rustic", "satin", "sheer", "silky", "soft", "soft-focus",
       "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
-    "aliases": ["clean", "neutral", "everyday", "minimal", "invisible","skin-like", "effortless", "natural", "bare", "barely there"]
+    "aliases": ["clean", "neutral", "everyday", "minimal", "invisible","skin-like", "effortless", "natural", "bare", "barely there", "no makeup"]
   },
 
   "romantic": {

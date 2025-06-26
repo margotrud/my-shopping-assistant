@@ -1,0 +1,71 @@
+import unittest
+import spacy
+
+from Chatbot.extractors.color.shared.vocab import known_tones
+from Chatbot.extractors.color.extraction.standalone import extract_standalone_phrases
+from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+nlp = spacy.load("en_core_web_sm")
+known_modifiers = load_known_modifiers()
+
+class TestExtractStandalonePhrases(unittest.TestCase):
+
+    def run_case(self, text, expected, debug=False):
+        tokens = list(nlp(text))
+        result = extract_standalone_phrases(tokens, known_modifiers, known_tones, debug)
+        print(f"Expected: {expected}")
+        print(f"Actual  : {result}")
+        self.assertEqual(set(expected), result)
+
+    def test_case_01(self): self.run_case("pink", ["pink"])
+    def test_case_02(self): self.run_case("soft", ["soft"])
+    def test_case_03(self): self.run_case("muted pink", ["muted", "pink"])
+    def test_case_04(self): self.run_case("blush", [])
+    def test_case_05(self): self.run_case("romantic", ["soft", "rosy"])
+    def test_case_06(self): self.run_case("blush lipstick", ["pink"])
+    def test_case_07(self): self.run_case("deep coral", ["deep", "coral"])
+    def test_case_08(self): self.run_case("soft muted coral", ["soft", "muted", "coral"])
+    def test_case_09(self): self.run_case("light peach", ["light", "peach"])
+    def test_case_10(self): self.run_case("cool tone", ["cool"])
+    def test_case_11(self): self.run_case("bold red", ["bold", "red"])
+    def test_case_12(self): self.run_case("nude", ["nude"])
+    def test_case_13(self): self.run_case("barely there", ["bare"])
+    def test_case_14(self): self.run_case("elegant", [])
+    def test_case_15(self): self.run_case("rosy", ["rosy"])
+    def test_case_16(self): self.run_case("classic peachy", ["peachy"])
+    def test_case_17(self): self.run_case("I love dusty rose", ["dusty", "rose"])
+    def test_case_18(self): self.run_case("shiny lipstick", [])
+    def test_case_19(self): self.run_case("clean pink shade", ["pink"])
+    def test_case_20(self): self.run_case("rosybrown", [])
+    def test_case_21(self): self.run_case("icy blush", ["icy", "pink"])
+    def test_case_22(self): self.run_case("soft glam", ["soft", "rosy"])
+    def test_case_23(self): self.run_case("dramatic romantic", ["rosy", "soft"])
+    def test_case_24(self): self.run_case("natural", [])
+    def test_case_25(self): self.run_case("something soft and peachy", ["soft", "peachy"])
+    def test_case_26(self): self.run_case("cool and warm", ["cool", "warm"])
+    def test_case_27(self): self.run_case("ultra muted", ["muted"])
+    def test_case_28(self): self.run_case("deep nude shade", ["deep", "nude"])
+    def test_case_29(self): self.run_case("shade of soft coral", ["soft", "coral"])
+    def test_case_30(self): self.run_case("icy icy icy", ["icy"])
+    def test_case_31(self): self.run_case("dark tone lipstick", ["dark"])
+    def test_case_32(self): self.run_case("bold pink blush", ["bold", "pink"])
+    def test_case_33(self): self.run_case("natural foundation", [])
+    def test_case_34(self): self.run_case("rosy cheeks", ["rosy"])
+    def test_case_35(self): self.run_case("warm dusty rose", ["warm", "dusty", "rose"])
+    def test_case_36(self): self.run_case("subtle glam", [])
+    def test_case_37(self): self.run_case("elegant nude", ["nude"])
+    def test_case_38(self): self.run_case("glittery pink", ["pink"])
+    def test_case_39(self): self.run_case("lavender lipstick", ["lavender"])
+    def test_case_40(self): self.run_case("peach tone", ["peach"])
+    def test_case_41(self): self.run_case("soft soft pink", ["soft", "pink"])
+    def test_case_42(self): self.run_case("medium-light beige", ["beige"])
+    def test_case_43(self): self.run_case("pinky tone", [])
+    def test_case_44(self): self.run_case("base tone", [])
+    def test_case_45(self): self.run_case("rich blush", ["pink"])
+    def test_case_46(self): self.run_case("something subtle and romantic", ["soft", "rosy"])
+    def test_case_47(self): self.run_case("cool-neutral shade", ["cool"])
+    def test_case_48(self): self.run_case("medium peach", ["medium", "peach"])
+    def test_case_49(self): self.run_case("barely there tone", [])
+    def test_case_50(self): self.run_case("soft romantic peach blush", ["soft", "rosy", "peach", "pink"])
+
+if __name__ == "__main__":
+    unittest.main()
