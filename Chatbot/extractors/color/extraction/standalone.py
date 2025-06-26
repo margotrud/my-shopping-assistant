@@ -108,15 +108,67 @@ def _inject_expression_modifiers(tokens, known_modifiers, debug):
 
 def _extract_filtered_tokens(tokens, known_modifiers, known_tones, debug):
     result = set()
+
     for tok in tokens:
         raw = normalize_token(tok.text)
+
+        if debug:
+            print(f"\n[🧪 TOKEN] '{tok.text}' → normalized: '{raw}' (POS={tok.pos_})")
+            print(f"[🔎 CHECK] In COSMETIC_NOUNS? → {raw in COSMETIC_NOUNS}")
+
+        # ✅ Block known cosmetic nouns
         if raw in COSMETIC_NOUNS:
+            if debug:
+                print(f"[⛔ SKIPPED] Cosmetic noun '{raw}' blocked")
             continue
+
+        # ✅ Skip connector words (and, or, etc.) via POS tag
+        if tok.pos_ == "CCONJ":
+            if debug:
+                print(f"[⛔ SKIPPED] Connector '{raw}' ignored (POS=CCONJ)")
+            continue
+
+        # ✅ Resolve token
         resolved = resolve_modifier_token(raw, known_modifiers, known_tones)
+
+        if debug:
+            print(f"[🔍 RESOLVED] '{raw}' → '{resolved}'")
+            print(f"[📌 raw ∈ tones?] {raw in known_tones}")
+            print(f"[📌 resolved ∈ tones?] {resolved in known_tones if resolved else '—'}")
+            print(f"[📏 resolved == raw?] {resolved == raw if resolved else '—'}")
+            print(f"[📏 resolved starts with raw?] {resolved.startswith(raw) if resolved else '—'}")
+            print(f"[📐 contains hyphen?] {'-' in resolved if resolved else '—'}")
+            print(f"[🧮 total matches so far] {len(result)}")
+
+        # 🔒 Block fuzzy match result if too short to trust
+        if len(raw) <= 3 and resolved != raw:
+            if debug:
+                print(f"[⛔ REJECTED] Token '{raw}' too short for safe fuzzy match → '{resolved}'")
+            continue
+
+        # 🔒 Reject fuzzy compound result unless raw is root
+        if resolved and "-" in resolved and not resolved.startswith(raw):
+            if debug:
+                print(f"[⛔ REJECTED] Fuzzy '{raw}' → '{resolved}' (compound mismatch)")
+            continue
+
+        # 🔒 Reject multi-word result from a single token
+        if resolved and " " in resolved and " " not in raw:
+            if debug:
+                print(f"[⛔ REJECTED] Fuzzy '{raw}' → '{resolved}' (multi-word result from single token)")
+            continue
+
+        # 🔒 If already have strong matches, skip risky fuzzy ones
+        if len(result) >= 3 and resolved != raw:
+            if debug:
+                print(f"[⛔ REJECTED] Skipping fuzzy '{raw}' → '{resolved}' (already 3+ matches)")
+            continue
+
         if resolved:
             result.add(resolved)
             if debug:
                 print(f"[🎯 STANDALONE MATCH] '{raw}' → '{resolved}'")
+
     return result
 
 def _finalize_standalone_phrases(injected, filtered, debug):

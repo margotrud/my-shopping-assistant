@@ -14,7 +14,7 @@ BLOCKED_TOKENS = {
 
 COSMETIC_NOUNS = {
     "blush", "foundation", "lipstick", "concealer",
-    "bronzer", "highlighter", "mascara", "eyeliner"
+    "bronzer", "highlighter", "mascara", "eyeliner", "tone", "shades"
 }
 
 EXPRESSION_SUPPRESSION_RULES = {
