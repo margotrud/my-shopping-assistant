@@ -47,10 +47,18 @@ def _fuzzy_match_modifier(raw: str, known_modifiers: set, threshold: float = 80,
     best_match = None
     for candidate in known_modifiers:
         score = fuzzy_token_match(raw, candidate)
-        print(f"Checking '{candidate}': score={score}")  # debug
-        if score > best_score:
+        if candidate == raw:
+            # 👑 PRIORITIZE exact match
+            best_match = candidate
+            best_score = 100
+            break
+        elif ( score > best_score or
+                (score == best_score and best_match is not None and len(candidate) < len(best_match))
+            ):
+
             best_score = score
             best_match = candidate
+
     if best_match and best_score >= threshold:
         if debug:
             print(f"[DEBUG] Best match: '{best_match}' with score {best_score}")
