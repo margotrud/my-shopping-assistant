@@ -20,10 +20,9 @@ Features:
 
 from typing import List, Set
 import re
-from fuzzywuzzy import fuzz
 from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
-from Chatbot.extractors.color.utils.token_utils import singularize, normalize_token
-
+from Chatbot.extractors.color.utils.token_utils import normalize_token
+from fuzzywuzzy import fuzz
 
 def fuzzy_token_match(a: str, b: str) -> float:
     a = normalize_token(a)
@@ -33,7 +32,7 @@ def fuzzy_token_match(a: str, b: str) -> float:
         return 100
 
     if frozenset({a, b}) in SEMANTIC_CONFLICTS:
-        return 60  # hard semantic block
+        return 50  # hard semantic block
 
     partial = fuzz.partial_ratio(a, b)
     ratio = fuzz.ratio(a, b)
@@ -41,8 +40,7 @@ def fuzzy_token_match(a: str, b: str) -> float:
 
     return min(100, round((partial + ratio) / 2 + bonus))
 
-from Chatbot.extractors.color.utils.token_utils import normalize_token
-from fuzzywuzzy import fuzz
+
 
 def fuzzy_fallback_unmatched_tokens(original_tokens, expression_map, matched_expressions, consumed_spans, threshold=90, debug=False):
     for idx, raw_token in enumerate(original_tokens):
@@ -147,21 +145,56 @@ def match_expression_aliases(text: str, expression_map: dict, debug: bool = Fals
     return matched_expressions
 
 
-def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 85) -> bool:
-    """
-    Evaluates whether a multi-word alias should be accepted as a match based on fuzzy similarity.
 
-    Args:
-        alias (str): The multi-word alias (e.g., "work appropriate").
-        input_text (str): Lowercased user input text (e.g., "something more work appropriate").
-        threshold (int): Minimum fuzzy ratio required for match.
+def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 80, debug: bool = False) -> bool:
+    norm_alias = normalize_token(alias)
+    norm_input = normalize_token(input_text)
 
-    Returns:
-        bool: True if match is confident, else False.
-    """
-    score = fuzz.partial_ratio(normalize_token(alias), normalize_token(input_text))
-    return score >= threshold
+    if norm_alias == norm_input:
+        if debug: print("[✅ MATCH] Exact normalized match")
+        return True
 
+    # 1. strict fuzzy match
+    score = fuzz.partial_ratio(norm_alias, norm_input)
+    if debug: print(f"[🔍 FUZZ.partial_ratio] → {score}")
+    if score >= threshold:
+        return True
+
+    # 2. 2-token reordering
+    alias_parts = norm_alias.split()
+    input_parts = norm_input.split()
+    if len(alias_parts) == 2 and len(input_parts) == 2:
+        if sorted(alias_parts) == sorted(input_parts):
+            return True
+
+    # 3. token-by-token containment (strict)
+    matched = 0
+    for token in alias_parts:
+        best_token, best_score = "", 0
+        for other in input_parts:
+            score = fuzz.partial_ratio(token, other)
+            if score > best_score:
+                best_token, best_score = other, score
+        if debug:
+            print(f"[🔎 CONTAINMENT] '{token}' vs '{best_token}' → {best_score}")
+        # ✅ NEW: Require more than prefix overlap
+        if best_score >= 85 and not best_token.startswith(token):
+            matched += 1
+        else:
+            if debug: print(f"[⛔ REJECTED] '{token}' matched only prefix or too weak")
+
+    if matched == len(alias_parts):
+        if debug: print("[✅ MATCH] All alias parts passed strict fuzzy containment")
+        return True
+
+    # 4. loose fallback
+    loose_score = fuzz.token_set_ratio(alias, input_text)
+    if debug: print(f"[🧪 FUZZ.token_set_ratio] → {loose_score}")
+    if loose_score >= 75:
+        return True
+
+    if debug: print("[❌ NO MATCH]")
+    return False
 
 def is_exact_match(a: str, b: str) -> bool:
     """

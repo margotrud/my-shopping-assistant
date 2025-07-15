@@ -32,7 +32,7 @@ class TestShouldAcceptMultiwordAlias(unittest.TestCase):
     def test_case_17(self): self.run_case("date night", "date night vibe", True)
     def test_case_18(self): self.run_case("date night", "soft date night glam", True)
     def test_case_19(self): self.run_case("date night", "d8 night look", False)
-    def test_case_20(self): self.run_case("date night", "night date", False)
+    def test_case_20(self): self.run_case("date night", "night date", True)
 
     def test_case_21(self): self.run_case("work appropriate", "work appropriate", True)
     def test_case_22(self): self.run_case("work appropriate", "something more work appropriate", True)
@@ -55,13 +55,13 @@ class TestShouldAcceptMultiwordAlias(unittest.TestCase):
     def test_case_36(self): self.run_case("clean girl", "clean girl", True)
     def test_case_37(self): self.run_case("clean girl", "clean girll look", True)
     def test_case_38(self): self.run_case("clean girl", "looking for a clean girl vibe", True)
-    def test_case_39(self): self.run_case("clean girl", "girl clean aesthetic", False)
+    def test_case_39(self): self.run_case("clean girl", "girl clean aesthetic", True)
     def test_case_40(self): self.run_case("clean girl", "just clean", False)
 
     def test_case_41(self): self.run_case("natural glow", "natural glow", True)
     def test_case_42(self): self.run_case("natural glow", "looking for natural glow", True)
     def test_case_43(self): self.run_case("natural glow", "natrual glow", True)
-    def test_case_44(self): self.run_case("natural glow", "natrl glow", False)
+    def test_case_44(self): self.run_case("natural glow", "natrl glow", True)
     def test_case_45(self): self.run_case("natural glow", "natural gloss", True)
 
     def test_case_46(self): self.run_case("even tone", "even tone", True)

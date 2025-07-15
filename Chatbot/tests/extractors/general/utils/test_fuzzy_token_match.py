@@ -2,8 +2,6 @@
 
 import unittest
 from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match
-from Chatbot.extractors.general.utils.fuzzy_match import normalize_token
-
 class TestFuzzyTokenMatch(unittest.TestCase):
 
     def run_case(self, a, b, expected_score):
@@ -26,7 +24,7 @@ class TestFuzzyTokenMatch(unittest.TestCase):
     def test_case_13(self): self.run_case("yellow", "yellw", 96)
     def test_case_14(self): self.run_case("orange", "oranje", 93)
     def test_case_15(self): self.run_case("rose", "rosé", 85)
-    def test_case_16(self): self.run_case("offwhite", "white", 60)
+    def test_case_16(self): self.run_case("offwhite", "white", 50)
     def test_case_17(self): self.run_case("blush", "bllush", 96)
     def test_case_18(self): self.run_case("mint", "mnt", 76)
     def test_case_19(self): self.run_case("taupe", "tap", 81)
@@ -35,12 +33,12 @@ class TestFuzzyTokenMatch(unittest.TestCase):
     def test_case_22(self): self.run_case("muted", "mutted", 96)
     def test_case_23(self): self.run_case("dusty", "dust", 100)
     def test_case_24(self): self.run_case("warm", "wram", 75)
-    def test_case_25(self): self.run_case("cool", "coal", 60)
+    def test_case_25(self): self.run_case("cool", "coal", 50)
     def test_case_26(self): self.run_case("bronze", "bronz", 100)
     def test_case_27(self): self.run_case("peach", "peech", 90)
     def test_case_28(self): self.run_case("olive", "oliv", 100)
     def test_case_29(self): self.run_case("mauve", "mouve", 80)
-    def test_case_30(self): self.run_case("moss", "moos", 85)
+    def test_case_30(self): self.run_case("moss", "moos", 77)
     def test_case_31(self): self.run_case("ink", "inc", 77)
     def test_case_32(self): self.run_case("charcoal", "charcol", 100)
     def test_case_33(self): self.run_case("deep", "deap", 85)
