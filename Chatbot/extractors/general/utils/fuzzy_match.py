@@ -21,7 +21,6 @@ import re
 from fuzzywuzzy import fuzz
 from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
 from Chatbot.extractors.color.utils.token_utils import normalize_token, split_glued_tokens
-from Chatbot.extractors.color.shared.vocab import known_tones
 from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
 from Chatbot.extractors.general.utils.tokenizer import get_tokens_and_counts
 known_modifiers = load_known_modifiers()
@@ -206,21 +205,6 @@ def _handle_singleword_alias(alias, input_text, tokens, matched_aliases, debug):
 # 🔹 Fuzzy Token Logic
 # ──────────────────────────────────────────────────────────────
 
-def fuzzy_token_match(a: str, b: str) -> float:
-    a = normalize_token(a)
-    b = normalize_token(b)
-
-    if a == b:
-        return 100
-
-    if frozenset({a, b}) in SEMANTIC_CONFLICTS:
-        return 50
-
-    partial = fuzz.partial_ratio(a, b)
-    ratio = fuzz.ratio(a, b)
-    bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
-
-    return min(100, round((partial + ratio) / 2 + bonus))
 
 def _is_token_fuzzy_match(
     alias,
@@ -303,8 +287,6 @@ def is_strong_fuzzy_match(a: str, b: str, threshold: int = 85) -> bool:
 def is_embedded_alias_conflict(longer: str, shorter: str) -> bool:
     return shorter in longer and shorter != longer
 
-def is_modifier_compound_conflict(expression: str, modifier_tokens: Set[str]) -> bool:
-    return expression in modifier_tokens
 
 def is_negation_conflict(a: str, b: str) -> bool:
     a = normalize_token(a)

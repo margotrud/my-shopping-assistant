@@ -7,8 +7,12 @@ modifier_resolution.py
 Handles all logic related to resolving modifier tokens in descriptive color phrases.
 Supports direct matching, suffix fallback, and fuzzy logic.
 """
+from typing import Set
+
+from fuzzywuzzy import fuzz
+
+from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
 from Chatbot.extractors.color.shared.vocab import known_tones
-from Chatbot.extractors.general.utils.fuzzy_match import fuzzy_token_match
 from Chatbot.extractors.color.utils.token_utils import normalize_token
 from Chatbot.extractors.color.logic.compound_rule import is_blocked_modifier_tone_pair
 
@@ -113,13 +117,15 @@ def resolve_modifier_token(
 
     # 4. Fuzzy match fallback BEFORE blocking
     if allow_fuzzy:
-        fuzzy = fuzzy_match_modifier_safe(raw, known_modifiers | known_tones)
+        full_set = known_modifiers | (known_tones or set())
+        fuzzy = fuzzy_match_modifier_safe(raw, full_set)
+
         if fuzzy:
             debug_print(f"[🤏 FUZZY MATCH] '{raw}' → '{fuzzy}'")
             return fuzzy
 
     # 5. Block tones being used as modifiers
-    if not is_tone and raw in known_tones:
+    if not is_tone and known_tones and raw in known_tones:
         debug_print(f"[⛔ BLOCKED] '{raw}' is a tone, not a modifier")
         return None
 
@@ -132,3 +138,27 @@ def is_y_suffix_from_tone(word: str, known_tones: set) -> bool:
 
 def should_suppress_compound(mod: str, tone: str) -> bool:
     return mod == tone or tone.startswith(mod) or mod.startswith(tone)
+
+def is_modifier_compound_conflict(expression: str, modifier_tokens: Set[str]) -> bool:
+    """
+    Determines whether the expression token overlaps with the modifier space.
+    Uses internal resolution logic.
+    """
+    resolved = resolve_modifier_token(expression, modifier_tokens, known_tones=None, allow_fuzzy=True, is_tone=False)
+    return resolved in modifier_tokens
+
+def fuzzy_token_match(a: str, b: str) -> float:
+    a = normalize_token(a)
+    b = normalize_token(b)
+
+    if a == b:
+        return 100
+
+    if frozenset({a, b}) in SEMANTIC_CONFLICTS:
+        return 50
+
+    partial = fuzz.partial_ratio(a, b)
+    ratio = fuzz.ratio(a, b)
+    bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
+
+    return min(100, round((partial + ratio) / 2 + bonus))
