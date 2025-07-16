@@ -1,5 +1,3 @@
-# Chatbot/extractors/general/utils/fuzzy_match.py
-
 """
 fuzzy_match.py
 ==============
@@ -20,115 +18,135 @@ Features:
 
 from typing import List, Set
 import re
-from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
-from Chatbot.extractors.color.utils.token_utils import normalize_token
 from fuzzywuzzy import fuzz
+from Chatbot.extractors.color.shared.constants import SEMANTIC_CONFLICTS
+from Chatbot.extractors.color.utils.token_utils import normalize_token, split_glued_tokens
+from Chatbot.extractors.color.shared.vocab import known_tones
+from Chatbot.extractors.color.utils.config_loader import load_known_modifiers
+from Chatbot.extractors.general.utils.tokenizer import get_tokens_and_counts
+known_modifiers = load_known_modifiers()
+# ──────────────────────────────────────────────────────────────
+# 🔹 Primary Interface: Expression Alias Matching
+# ──────────────────────────────────────────────────────────────
 
-def fuzzy_token_match(a: str, b: str) -> float:
-    a = normalize_token(a)
-    b = normalize_token(b)
-
-    if a == b:
-        return 100
-
-    if frozenset({a, b}) in SEMANTIC_CONFLICTS:
-        return 50  # hard semantic block
-
-    partial = fuzz.partial_ratio(a, b)
-    ratio = fuzz.ratio(a, b)
-    bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
-
-    return min(100, round((partial + ratio) / 2 + bonus))
-
-
-
-def fuzzy_fallback_unmatched_tokens(original_tokens, expression_map, matched_expressions, consumed_spans, threshold=90, debug=False):
-    for idx, raw_token in enumerate(original_tokens):
-        if idx in consumed_spans:
-            continue  # already matched
-
-        for expression, props in expression_map.items():
-            for alias in props.get("aliases", []):
-                alias_words = alias.lower().split()
-                if len(alias_words) == 1:
-                    score = fuzz.ratio(raw_token.lower(), alias_words[0])
-                    if score >= threshold:
-                        matched_expressions.add(expression)
-                        if debug:
-                            print(f"[🌀 FUZZY MATCH] '{raw_token}' ~ '{alias_words[0]}' ({score}) → Expression: '{expression}'")
-                        break
-
-def match_expression_aliases(text: str, expression_map: dict, debug: bool = True) -> set[str]:
-    """
-    Matches known expression aliases to user input using:
-    - Literal span match (multi-word or token-by-token)
-    - Normalized token match
-    - Fuzzy fallback on full input (via should_accept_multiword_alias)
-
-    Args:
-        text (str): Raw user input, e.g., "barely there glam"
-        expression_map (dict): Expression → alias list
-        debug (bool): Whether to print debug info
-
-    Returns:
-        set[str]: Expressions matched (e.g., {"natural", "soft glam"})
-    """
-
-    tokens = text.lower().split()
+def match_expression_aliases(input_text, expression_map, debug=True):
+    tokens = list(get_tokens_and_counts(input_text).keys())
     matched_expressions = set()
+    matched_aliases = set()
 
-    if debug:
-        print(f"[🧪 INPUT TEXT] → '{text}'")
-        print(f"[🧬 TOKENS] → {tokens}")
-        print(f"[📂 TOTAL EXPRESSIONS] → {len(expression_map)}")
+    for expr, props in expression_map.items():
+        aliases = props.get("aliases", [])
+        multiword_aliases = [a for a in aliases if " " in a]
+        singleword_aliases = [a for a in aliases if " " not in a]
 
-    # ───── Literal match over token spans
-    for expression, aliases in expression_map.items():
-        if debug:
-            print(f"\n🔍 [CHECKING EXPRESSION] '{expression}' with {len(aliases)} aliases")
-
-        for alias in aliases:
-            alias_tokens = alias.lower().split()
-            n = len(alias_tokens)
-
-            for i in range(len(tokens) - n + 1):
-                window = tokens[i:i+n]
-                if window == alias_tokens:
-                    matched_expressions.add(expression)
+        # ⏫ First match multiword aliases (to suppress inner tokens like 'glam' in 'soft glam')
+        for alias in multiword_aliases + singleword_aliases:
+            if _should_accept_match(alias, input_text, tokens, matched_aliases, debug):
+                if debug:
+                    print(f"[✅ MATCH] Alias '{alias}' matched → {expr}")
+                matched_expressions.add(expr)
+                matched_aliases.add(alias.strip().lower())
+                break
+    # 🧩 Fallback: try matching by fuzzy modifier similarity
+    if not matched_expressions:
+        for expr, props in expression_map.items():
+            modifiers = props.get("modifiers", [])
+            for mod in modifiers:
+                score = fuzz.ratio(mod.lower(), input_text.lower())
+                if debug:
+                    print(f"[🔍 MODIFIER FUZZ] '{input_text}' vs '{mod}' → {score}")
+                if score >= 90:
+                    matched_expressions.add(expr)
                     if debug:
-                        print(f"✅ [MATCH] Alias '{alias}' at span ({i}, {i+n}) → {window}")
+                        print(f"[✅ MODIFIER MATCH] '{input_text}' ~ '{mod}' → {expr}")
                     break
 
-    # ───── Fuzzy fallback using full input text
-    if debug:
-        print("\n[🌀 FUZZY FALLBACK STARTED]")
-
-    for expression, aliases in expression_map.items():
+    # 🧼 Final cleanup: suppress any expression whose alias is embedded in a longer match
+    to_remove = set()
+    for expr in matched_expressions:
+        aliases = expression_map[expr].get("aliases", [])
         for alias in aliases:
-            if should_accept_multiword_alias(alias, text, threshold=80, debug=debug, strict=False):
-                matched_expressions.add(expression)
-                if debug:
-                    print(f"🌀 [EXPR ALIAS MATCHER] '{alias}' ~ '{text}' → {expression}")
-                break  # no need to check other aliases for this expression
+            norm_alias = alias.strip().lower()
+            input_norm = input_text.strip().lower()
 
-    # ───── Glued compound match (e.g., 'softglam')
-    for token in tokens:
-        for expression, aliases in expression_map.items():
-            for alias in aliases:
-                if " " not in alias:
-                    continue
-                parts = alias.lower().split()
-                joined = "".join(parts)
-                if token == joined:
-                    matched_expressions.add(expression)
+            # Skip suppression if alias is a direct match
+            if norm_alias == input_norm:
+                continue
+
+            # Don't suppress unless the shorter alias was actually matched independently
+            if norm_alias not in matched_aliases:
+                continue
+
+            for matched in matched_aliases:
+                if norm_alias in matched and norm_alias != matched:
                     if debug:
-                        print(f"🧩 [GLUED MATCH] '{token}' → '{alias}' → {expression}")
+                        print(f"[🚫 EMBEDDED ALIAS REMOVED] '{norm_alias}' inside '{matched}'")
+                    to_remove.add(expr)
 
-    if debug:
-        print(f"\n[🎯 FINAL MATCHED EXPRESSIONS] → {matched_expressions}")
+    matched_expressions -= to_remove
 
     return matched_expressions
 
+
+# ──────────────────────────────────────────────────────────────
+# 🔹 Core Matching Dispatcher
+# ──────────────────────────────────────────────────────────────
+
+def _should_accept_match(alias, input_text, tokens, matched_aliases=None, debug=True):
+    if input_text and alias in input_text.lower():
+        if debug:
+            print(f"[✅ DIRECT CONTAINS MATCH] alias '{alias}' found inside input → accepting")
+        return True
+
+    alias = alias.strip().lower()
+    input_text = input_text.strip().lower()
+    matched_aliases = matched_aliases or set()
+    is_multiword = " " in alias
+
+    for matched in matched_aliases:
+        if alias in matched and matched != alias:
+            if debug:
+                print(f"[⛔ SKIP] '{alias}' is part of already matched multiword: '{matched}'")
+            return False
+
+    return (
+        _handle_multiword_alias(alias, input_text, debug)
+        if is_multiword
+        else _handle_singleword_alias(alias, input_text, tokens, matched_aliases, debug)
+    )
+
+# ──────────────────────────────────────────────────────────────
+# 🔹 Multiword Alias Handling
+# ──────────────────────────────────────────────────────────────
+
+def _handle_multiword_alias(alias, input_text, debug):
+    if _is_exact_alias_match(alias, input_text):
+        if debug: print(f"[✅ EXACT MATCH] '{alias}' == '{input_text}'")
+        return True
+    return _is_multiword_alias_match(alias, input_text, debug=debug)
+
+def _is_multiword_alias_match(alias, input_text, threshold=85, debug=True):
+    norm_alias = alias.strip().lower()
+    norm_input = input_text.strip().lower()
+
+    if fuzz.partial_ratio(norm_alias, norm_input) >= threshold:
+        if debug: print(f"[🔍 FUZZ.partial_ratio] {norm_alias} ~ {norm_input}")
+        return True
+
+    alias_parts = norm_alias.split()
+    input_parts = norm_input.split()
+
+    if len(alias_parts) == 2 and sorted(alias_parts) == sorted(input_parts):
+        if debug: print(f"[🔀 REORDERED MATCH] '{alias}' parts found in input")
+        return True
+
+    if fuzz.token_set_ratio(norm_alias, norm_input) >= 85 and _has_token_overlap(norm_alias, norm_input):
+        if debug: print(f"[🌀 TOKEN SET MATCH] {norm_alias} ~ {norm_input}")
+        return True
+
+    return False
+def _has_token_overlap(a: str, b: str) -> bool:
+    return bool(set(a.split()) & set(b.split()))
 
 
 def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 80, debug: bool = True, strict: bool = True):
@@ -139,148 +157,156 @@ def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 
         if debug: print("[✅ MATCH] Exact normalized match")
         return True
 
-    # 1. strict fuzzy match
     score = fuzz.partial_ratio(norm_alias, norm_input)
     if debug: print(f"[🔍 FUZZ.partial_ratio] → {score}")
     if score >= threshold:
         return True
 
-    # 2. 2-token reordering
     alias_parts = norm_alias.split()
     input_parts = norm_input.split()
-    if len(alias_parts) == 2 and len(input_parts) == 2:
-        if sorted(alias_parts) == sorted(input_parts):
-            return True
 
-    # 3. token-by-token containment (strict)
+    if len(alias_parts) == 2 and len(input_parts) == 2 and sorted(alias_parts) == sorted(input_parts):
+        return True
+
     matched = 0
     for token in alias_parts:
-        best_token, best_score = "", 0
-        for other in input_parts:
-            score = fuzz.partial_ratio(token, other)
-            if score > best_score:
-                best_token, best_score = other, score
-        if debug:
-            print(f"[🔎 CONTAINMENT] '{token}' vs '{best_token}' → {best_score}")
-        # ✅ NEW: Require more than prefix overlap
-        if (
-                best_score >= 85
-                and (not strict or not (
-                best_token.startswith(token) or token.startswith(best_token)
-                or best_token.endswith(token) or token.endswith(best_token)
-        ))
-        ):
+        best_score = max(fuzz.partial_ratio(token, other) for other in input_parts)
+        if best_score >= 85 and (not strict or not any([
+            token.startswith(other) or other.startswith(token)
+            or token.endswith(other) or other.endswith(token)
+            for other in input_parts])):
             matched += 1
-        else:
-            if debug: print(f"[⛔ REJECTED] '{token}' matched only prefix or too weak")
 
     if matched == len(alias_parts):
         if debug: print("[✅ MATCH] All alias parts passed strict fuzzy containment")
         return True
 
-    # 4. loose fallback
     loose_score = fuzz.token_set_ratio(alias, input_text)
     if debug: print(f"[🧪 FUZZ.token_set_ratio] → {loose_score}")
-    if loose_score >= 92 and (len(alias.split()) > 2 or len(input_text.split()) > 2):
+    return loose_score >= 92 and (len(alias.split()) > 2 or len(input_text.split()) > 2)
+
+# ──────────────────────────────────────────────────────────────
+# 🔹 Singleword Alias Handling
+# ──────────────────────────────────────────────────────────────
+
+def _handle_singleword_alias(alias, input_text, tokens, matched_aliases, debug):
+    for matched in matched_aliases:
+        if alias in matched and len(matched.split()) > 1:
+            if debug:
+                print(f"[⛔ BLOCKED: token inside multiword] '{alias}' in '{matched}'")
+            return False
+
+    if _is_exact_alias_match(alias, input_text):
+        if debug: print(f"[✅ EXACT MATCH] '{alias}' == '{input_text}'")
         return True
 
-    if debug: print("[❌ NO MATCH]")
+    return _is_token_fuzzy_match(alias, tokens, matched_aliases=matched_aliases, debug=debug)
+
+# ──────────────────────────────────────────────────────────────
+# 🔹 Fuzzy Token Logic
+# ──────────────────────────────────────────────────────────────
+
+def fuzzy_token_match(a: str, b: str) -> float:
+    a = normalize_token(a)
+    b = normalize_token(b)
+
+    if a == b:
+        return 100
+
+    if frozenset({a, b}) in SEMANTIC_CONFLICTS:
+        return 50
+
+    partial = fuzz.partial_ratio(a, b)
+    ratio = fuzz.ratio(a, b)
+    bonus = 10 if a[:3] == b[:3] or a[:2] == b[:2] else 0
+
+    return min(100, round((partial + ratio) / 2 + bonus))
+
+def _is_token_fuzzy_match(
+    alias,
+    tokens,
+    input_text=None,
+    matched_aliases=None,
+    debug=True,
+    min_score=85
+):
+    alias = alias.strip().lower()
+    matched_aliases = matched_aliases or set()
+
+    if input_text:
+        input_tokens = input_text.strip().lower().split()
+        if len(input_tokens) == 2 and alias in input_tokens:
+            if debug:
+                print(f"[⛔ BLOCKED: TOKEN FUZZY] '{alias}' inside 2-word phrase: '{input_text}'")
+            return False
+
+    for token in tokens:
+        token = token.strip().lower()
+
+        if frozenset({alias, token}) in SEMANTIC_CONFLICTS:
+            if debug:
+                print(f"[🚫 FUZZY BLOCKED by SEMANTIC_CONFLICTS] '{token}' vs '{alias}'")
+            return False
+
+        score = fuzz.ratio(token, alias)
+        if debug:
+            print(f"[🔍 FUZZ.ratio] '{token}' vs '{alias}' → {score}")
+        if score >= min_score:
+            return True
+
+        # ✅ Soft y-suffix fallback: 'edge' → 'edgy'
+        if 70 <= score < min_score and alias.endswith("y"):
+            root = alias[:-1]
+            if token.startswith(root) or root.startswith(token):
+                if debug:
+                    print(f"[🌱 ROOT MATCH] '{token}' vs '{alias}' → accepting by suffix root")
+                return True
+
     return False
 
+# ──────────────────────────────────────────────────────────────
+# 🔹 Utility Functions (Normalization & Conflict Resolution)
+# ──────────────────────────────────────────────────────────────
+
+def _is_exact_alias_match(alias, input_text):
+    return alias.strip().lower() == input_text.strip().lower()
+
 def is_exact_match(a: str, b: str) -> bool:
-    """
-    Checks for normalized equality.
-
-    Args:
-        a (str): First token.
-        b (str): Second token.
-
-    Returns:
-        bool: True if equal after normalization.
-    """
     return normalize_token(a) == normalize_token(b)
-
 
 def is_strong_fuzzy_match(a: str, b: str, threshold: int = 85) -> bool:
     a_norm = normalize_token(a)
     b_norm = normalize_token(b)
 
-    if frozenset({a_norm, b_norm}) in SEMANTIC_CONFLICTS:
-        return False
-
-    if is_negation_conflict(a_norm, b_norm):
+    if frozenset({a_norm, b_norm}) in SEMANTIC_CONFLICTS or is_negation_conflict(a_norm, b_norm):
         return False
 
     return fuzzy_token_match(a_norm, b_norm) >= threshold
+
 def is_embedded_alias_conflict(longer: str, shorter: str) -> bool:
-    """
-    Detects conflict where one alias is embedded in another (e.g., 'glamorous' vs 'glam').
-
-    Args:
-        longer (str): Full phrase matched.
-        shorter (str): Alias token.
-
-    Returns:
-        bool: True if alias is strictly embedded and not equal.
-    """
     return shorter in longer and shorter != longer
 
-
 def is_modifier_compound_conflict(expression: str, modifier_tokens: Set[str]) -> bool:
-    """
-    Flags if an expression token conflicts with a known modifier,
-    e.g., 'natural' being interpreted both as an expression and a modifier.
-
-    Args:
-        expression (str): Candidate expression token.
-        modifier_tokens (Set[str]): Set of known modifiers.
-
-    Returns:
-        bool: True if conflict exists.
-    """
     return expression in modifier_tokens
 
+def is_negation_conflict(a: str, b: str) -> bool:
+    a = normalize_token(a)
+    b = normalize_token(b)
+    return (a.startswith("no ") and a[3:] == b) or (b.startswith("no ") and b[3:] == a)
 
 def remove_subsumed_matches(matches: List[str]) -> List[str]:
-    """
-    Removes redundant short matches that are:
-    - Prefixes of longer tokens (e.g., 'glam' vs 'glamorous')
-    - Full-word components inside longer multi-word expressions (e.g., 'glam' in 'soft glam')
-
-    Args:
-        matches (List[str]): List of matched phrases.
-
-    Returns:
-        List[str]: Filtered list with minimal semantic redundancy.
-    """
     filtered = []
     matches = sorted(matches, key=len, reverse=True)
 
     for candidate in matches:
-        is_subsumed = False
-        for existing in filtered:
-            if candidate == existing:
-                continue
-
-            # Case 1: strict prefix in a single-word token (e.g., glam → glamorous)
-            if " " not in existing and existing.startswith(candidate):
-                is_subsumed = True
-                break
-
-            # Case 2: full-word contained in a multi-word expression (e.g., glam in soft glam)
-            if re.search(rf'\b{re.escape(candidate)}\b', existing):
-                is_subsumed = True
-                break
-
+        is_subsumed = any(
+            candidate != existing and (
+                (" " not in existing and existing.startswith(candidate)) or
+                re.search(rf'\b{re.escape(candidate)}\b', existing)
+            )
+            for existing in filtered
+        )
         if not is_subsumed:
             filtered.append(candidate)
 
     return filtered
-def is_negation_conflict(a: str, b: str) -> bool:
-    a = normalize_token(a)
-    b = normalize_token(b)
-
-    return (
-        (a.startswith("no ") and a[3:] == b) or
-        (b.startswith("no ") and b[3:] == a)
-    )

@@ -30,5 +30,6 @@ SEMANTIC_CONFLICTS = {
     frozenset({"white", "offwhite"}),
     frozenset({"cool", "coal"}),
     frozenset({"soft glam", "soft glow"}),
-    frozenset({"blurple", "pale"})
+    frozenset({"blurple", "pale"}),
+    frozenset({"clay", "classy"})
 }

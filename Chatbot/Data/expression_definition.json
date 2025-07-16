@@ -25,7 +25,7 @@
       "ivory", "light", "luminous", "matte", "medium", "medium-light", "muted", "natural", "neutral", "neutral-warm",
       "opaque", "peachy", "pearly", "pinkish", "powdery", "radiant", "rosé", "rosy", "satin", "sheer", "silky", "soft",
       "soft-focus", "subtle", "tan", "very fair", "very light", "warm", "warm-neutral", "warm-toned"],
-    "aliases": ["timeless", "refined", "polished", "sophisticated", "formal", "elegant"]
+    "aliases": ["timeless", "refined", "polished", "sophisticated", "formal", "elegant", "classy"]
   },
   "evening": {
     "modifiers": [ "bold", "bold-toned", "bright", "bronzed", "brownish", "cool", "cool-toned", "dark", "deep", "electric",
@@ -71,6 +71,6 @@
       "natural", "neutral", "neutral-warm", "peachy", "pinkish", "pinky", "powdery", "radiant", "rosé", "rosy", "satin",
       "sheer", "silky", "soft", "soft-focus", "subtle", "warm", "warm-toned"],
     "aliases": ["natural glam", "wedding", "enhanced but subtle", "refined luminous makeup", "soft glam","soft yet polished glam", "radiance",
-    "subtle sparkle"]
+    "subtle sparkle", "barely there glam"]
   }
 }
