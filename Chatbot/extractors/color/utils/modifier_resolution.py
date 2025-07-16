@@ -87,17 +87,51 @@ def match_direct_modifier(token: str, known_modifiers: set, debug: bool = False)
         print(f"[NO MATCH] '{raw}' → no match in known_modifiers")
     return None
 
-def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
-    lowered = normalize_token(word)
-    for suffix in ("y", "ish"):
-        if lowered.endswith(suffix):
-            base = lowered[:-len(suffix)].rstrip("-").strip()
-            if len(base) >= 3 and base.isalpha():
-                if base in known_modifiers:
-                    return base
-                # New rule: if base + 'e' is known, return that
-                if base + "e" in known_modifiers:
-                    return base + "e"
+def match_suffix_fallback(token: str, known_modifiers: set) -> str | None:
+    """
+    Attempts to strip known cosmetic suffixes and return a valid modifier root.
+    Handles noise like 'softishy', 'rosy-', 'soft y', 'shady' (via override).
+    """
+    raw = token
+    token = token.lower().strip().replace("-", "").replace(" ", "")
+
+    if token in known_modifiers:
+        return token
+
+    # Manual overrides
+    OVERRIDE_MAP = {
+        "matting": "matte",
+        "rosier": "rose",
+        "rosy": "rose",
+        "rosy-": "rose",
+        "shady": "shade",
+        "soft y": "soft"
+    }
+    if raw.strip().lower() in OVERRIDE_MAP:
+        return OVERRIDE_MAP[raw.strip().lower()]
+
+    # Recursive suffix stripper
+    SUFFIXES = ("ish", "y", "er", "ly", "en", "ness", "ing", "est", "ier")
+    seen = set()
+
+    while token and token not in seen:
+        seen.add(token)
+        for suffix in SUFFIXES:
+            if token.endswith(suffix) and len(token) > len(suffix) + 1:
+                token = token[: -len(suffix)]
+                if token in known_modifiers:
+                    return token
+                # y→e fallback for mid-stages too
+                if token.endswith("y") and token[:-1] + "e" in known_modifiers:
+                    return token[:-1] + "e"
+                break
+        else:
+            break
+
+    # Final soft y→e fallback
+    if raw.endswith("y") and (raw[:-1] + "e") in known_modifiers:
+        return raw[:-1] + "e"
+
     return None
 
 
