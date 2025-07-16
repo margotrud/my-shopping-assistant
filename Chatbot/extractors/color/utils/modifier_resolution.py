@@ -18,10 +18,74 @@ from Chatbot.extractors.color.logic.compound_rule import is_blocked_modifier_ton
 
 def is_known_tone(word: str) -> bool:
     return normalize_token(word) in known_tones
-def match_direct_modifier(word: str, known_modifiers: set) -> str | None:
-    raw = normalize_token(word)
-    return raw if raw in known_modifiers else None
+from Chatbot.extractors.color.utils.token_utils import normalize_token, singularize
 
+def match_direct_modifier(token: str, known_modifiers: set, debug: bool = False) -> str | None:
+    """
+    Resolves a token to a known modifier using direct match, suffix stripping,
+    override map, and compound splitting.
+
+    Handles:
+    - Plural forms
+    - Derived adjectives (e.g., -y, -ish, -ness)
+    - Irregular forms (via override map)
+    - Hyphenated or space-separated compounds (e.g., 'soft-focus')
+    """
+
+    raw = token
+    token = token.strip().lower().replace("-", " ").strip()
+
+    if token in known_modifiers:
+        return token
+
+    # Manual overrides for irregular transformations
+    OVERRIDE_MAP = {
+        "matting": "matte",
+        "rosier": "rose"
+    }
+    if token in OVERRIDE_MAP:
+        if debug:
+            print(f"[OVERRIDE] '{raw}' → '{OVERRIDE_MAP[token]}'")
+        return OVERRIDE_MAP[token]
+
+    # Suffix stripping logic
+    SUFFIXES = (
+        "iness", "ness", "ishly", "ly", "ish", "y",
+        "ier", "er", "est", "ing", "edly", "en"
+    )
+    for suffix in SUFFIXES:
+        if token.endswith(suffix) and len(token) > len(suffix) + 2:
+            base = token[: -len(suffix)]
+            if base in known_modifiers:
+                if debug:
+                    print(f"[SUFFIX MATCH] '{raw}' → '{base}' (via -{suffix})")
+                return base
+
+    # Special case: 'rosy' → 'rose'
+    if token.endswith("y") and (token[:-1] + "e") in known_modifiers:
+        fallback = token[:-1] + "e"
+        if debug:
+            print(f"[Y→E FALLBACK] '{raw}' → '{fallback}'")
+        return fallback
+
+    # Singularize
+    singular = singularize(token)
+    if singular in known_modifiers:
+        if debug:
+            print(f"[SINGULAR MATCH] '{raw}' → '{singular}'")
+        return singular
+
+    # Compound fallback: pick any part if present
+    if " " in token:
+        for part in token.split():
+            if part in known_modifiers:
+                if debug:
+                    print(f"[COMPOUND MATCH] '{raw}' → '{part}'")
+                return part
+
+    if debug:
+        print(f"[NO MATCH] '{raw}' → no match in known_modifiers")
+    return None
 
 def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
     lowered = normalize_token(word)
