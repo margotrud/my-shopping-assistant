@@ -272,8 +272,25 @@ def _is_exact_alias_match(alias, input_text):
     return alias.strip().lower() == input_text.strip().lower()
 
 def is_exact_match(a: str, b: str) -> bool:
-    return normalize_token(a) == normalize_token(b)
+    """
+    Smart matching for exact/near-exact comparison:
+    - Lowercase
+    - Singularized
+    - Strips spaces/punctuation
+    - Allows minor spelling variations (e.g., 'glamourous' ~ 'glamorous')
+    """
+    def clean(text):
+        norm = normalize_token(text)
+        return re.sub(r'[^a-z0-9]', '', norm.lower())
 
+    a_clean = clean(a)
+    b_clean = clean(b)
+
+    if a_clean == b_clean:
+        return True
+
+    # Fallback: allow slight fuzzy variations
+    return fuzz.ratio(a_clean, b_clean) >= 90
 def is_strong_fuzzy_match(a: str, b: str, threshold: int = 85) -> bool:
     a_norm = normalize_token(a)
     b_norm = normalize_token(b)
