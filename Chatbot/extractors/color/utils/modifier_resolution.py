@@ -38,7 +38,7 @@ def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
 
 
 
-def fuzzy_match_modifier_safe(raw_token: str, known_modifiers: set, threshold: int = 75) -> str:
+def fuzzy_match_modifier_safe(raw_token: str, known_modifiers: set, threshold: int = 70) -> str:
     """
     Attempts to fuzzy match a raw token to a known modifier.
     Returns the best match if score is above the threshold.
