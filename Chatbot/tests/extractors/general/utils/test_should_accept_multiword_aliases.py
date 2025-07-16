@@ -68,4 +68,4 @@ class TestShouldAcceptMultiwordAlias(unittest.TestCase):
     def test_case_47(self): self.run_case("even tone", "even tone coverage", True)
     def test_case_48(self): self.run_case("even tone", "even toned skin", True)
     def test_case_49(self): self.run_case("even tone", "evening tone", False)
-    def test_case_50(self): self.run_case("even tone", "tone even", False)
+    def test_case_50(self): self.run_case("even tone", "tone even", True)

@@ -58,12 +58,12 @@ def fuzzy_fallback_unmatched_tokens(original_tokens, expression_map, matched_exp
                             print(f"[🌀 FUZZY MATCH] '{raw_token}' ~ '{alias_words[0]}' ({score}) → Expression: '{expression}'")
                         break
 
-def match_expression_aliases(text: str, expression_map: dict, debug: bool = False) -> set[str]:
+def match_expression_aliases(text: str, expression_map: dict, debug: bool = True) -> set[str]:
     """
     Matches known expression aliases to user input using:
     - Literal span match (multi-word or token-by-token)
     - Normalized token match
-    - Fuzzy fallback on raw tokens (only if nothing matched literally)
+    - Fuzzy fallback on full input (via should_accept_multiword_alias)
 
     Args:
         text (str): Raw user input, e.g., "barely there glam"
@@ -73,17 +73,16 @@ def match_expression_aliases(text: str, expression_map: dict, debug: bool = Fals
     Returns:
         set[str]: Expressions matched (e.g., {"natural", "soft glam"})
     """
-    from Chatbot.extractors.color.utils.token_utils import normalize_token
 
     tokens = text.lower().split()
     matched_expressions = set()
-    seen_aliases = set()
 
     if debug:
         print(f"[🧪 INPUT TEXT] → '{text}'")
         print(f"[🧬 TOKENS] → {tokens}")
         print(f"[📂 TOTAL EXPRESSIONS] → {len(expression_map)}")
 
+    # ───── Literal match over token spans
     for expression, aliases in expression_map.items():
         if debug:
             print(f"\n🔍 [CHECKING EXPRESSION] '{expression}' with {len(aliases)} aliases")
@@ -92,46 +91,32 @@ def match_expression_aliases(text: str, expression_map: dict, debug: bool = Fals
             alias_tokens = alias.lower().split()
             n = len(alias_tokens)
 
-            # Try literal match at each span
             for i in range(len(tokens) - n + 1):
                 window = tokens[i:i+n]
                 if window == alias_tokens:
                     matched_expressions.add(expression)
-                    seen_aliases.add(alias)
                     if debug:
                         print(f"✅ [MATCH] Alias '{alias}' at span ({i}, {i+n}) → {window}")
                     break
 
-    # Build token-to-expression fuzzy fallbacks (if nothing literal matched)
+    # ───── Fuzzy fallback using full input text
     if debug:
         print("\n[🌀 FUZZY FALLBACK STARTED]")
 
-    for token in tokens:
-        norm = normalize_token(token)
+    for expression, aliases in expression_map.items():
+        for alias in aliases:
+            if should_accept_multiword_alias(alias, text, threshold=80, debug=debug, strict=False):
+                matched_expressions.add(expression)
+                if debug:
+                    print(f"🌀 [EXPR ALIAS MATCHER] '{alias}' ~ '{text}' → {expression}")
+                break  # no need to check other aliases for this expression
 
-        for expression, aliases in expression_map.items():
-            for alias in aliases:
-                alias_norm = normalize_token(alias)
-
-                # 🧷 Safeguard: avoid matching a short alias if token embeds it
-                if len(alias.split()) == 1 and alias in token and len(token) > len(alias) + 3:
-                    if debug:
-                        print(f"[⛔ SKIP: alias too short for glue token] '{token}' ~ '{alias}'")
-                    continue
-
-                score = fuzzy_token_match(norm, alias_norm)
-                if score >= 100:
-                    matched_expressions.add(expression)
-                    if debug:
-                        print(f"🌀 [FUZZY FALLBACK] '{token}' ~ '{alias}' → {expression} (score={score})")
-
-    # 🔁 Try splitting glued tokens like 'softglam'
+    # ───── Glued compound match (e.g., 'softglam')
     for token in tokens:
         for expression, aliases in expression_map.items():
             for alias in aliases:
                 if " " not in alias:
-                    continue  # Only check compound aliases
-
+                    continue
                 parts = alias.lower().split()
                 joined = "".join(parts)
                 if token == joined:
@@ -146,7 +131,7 @@ def match_expression_aliases(text: str, expression_map: dict, debug: bool = Fals
 
 
 
-def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 80, debug: bool = False) -> bool:
+def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 80, debug: bool = True, strict: bool = True):
     norm_alias = normalize_token(alias)
     norm_input = normalize_token(input_text)
 
@@ -178,7 +163,13 @@ def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 
         if debug:
             print(f"[🔎 CONTAINMENT] '{token}' vs '{best_token}' → {best_score}")
         # ✅ NEW: Require more than prefix overlap
-        if best_score >= 85 and not best_token.startswith(token):
+        if (
+                best_score >= 85
+                and (not strict or not (
+                best_token.startswith(token) or token.startswith(best_token)
+                or best_token.endswith(token) or token.endswith(best_token)
+        ))
+        ):
             matched += 1
         else:
             if debug: print(f"[⛔ REJECTED] '{token}' matched only prefix or too weak")
@@ -190,7 +181,7 @@ def should_accept_multiword_alias(alias: str, input_text: str, threshold: int = 
     # 4. loose fallback
     loose_score = fuzz.token_set_ratio(alias, input_text)
     if debug: print(f"[🧪 FUZZ.token_set_ratio] → {loose_score}")
-    if loose_score >= 75:
+    if loose_score >= 92 and (len(alias.split()) > 2 or len(input_text.split()) > 2):
         return True
 
     if debug: print("[❌ NO MATCH]")
