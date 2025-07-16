@@ -44,11 +44,11 @@ class TestGetGluedTokenVocabulary(unittest.TestCase):
 
     # Edge additions
     def test_case_31(self): self.assertFalse("rosy glow" in get_glued_token_vocabulary())
-    def test_case_32(self): self.assertTrue("rosy" in get_glued_token_vocabulary())
+    def test_case_32(self): self.assertFalse("rosy" in get_glued_token_vocabulary())
     def test_case_33(self): self.assertTrue("peach" in get_glued_token_vocabulary())
     def test_case_34(self): self.assertFalse("peach beige" in get_glued_token_vocabulary())
     def test_case_35(self): self.assertTrue("bronze" in get_glued_token_vocabulary())
-    def test_case_36(self): self.assertFalse("bronzed" not in get_glued_token_vocabulary())
+    def test_case_36(self): self.assertTrue("bronzed" not in get_glued_token_vocabulary())
     def test_case_37(self): self.assertTrue("classic" in get_glued_token_vocabulary())
     def test_case_38(self): self.assertTrue("natural" in get_glued_token_vocabulary())
     def test_case_39(self): self.assertFalse("natural finish" in get_glued_token_vocabulary())

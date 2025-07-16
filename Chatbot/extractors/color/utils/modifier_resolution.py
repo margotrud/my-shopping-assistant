@@ -38,15 +38,33 @@ def match_suffix_fallback(word: str, known_modifiers: set) -> str | None:
 
 
 
-def fuzzy_match_modifier_safe(word: str, known_modifiers: set, threshold: int = 81) -> str | None:
-    raw = normalize_token(word)
-    best = _fuzzy_match_modifier(raw, known_modifiers)
-    if best and best[1] >= threshold:
-        return best[0]
+def fuzzy_match_modifier_safe(raw_token: str, known_modifiers: set, threshold: int = 75) -> str:
+    """
+    Attempts to fuzzy match a raw token to a known modifier.
+    Returns the best match if score is above the threshold.
+    Returns None if no match passes the threshold.
+    """
+    raw_token = raw_token.lower().strip()
+    best_match = None
+    best_score = 0
+
+    for candidate in known_modifiers:
+        candidate_norm = candidate.lower().strip()
+        score = fuzz.ratio(raw_token, candidate_norm)
+
+        if score > best_score:
+            best_score = score
+            best_match = candidate
+
+    if best_score >= threshold:
+        return best_match
+
+    print(f"[DEBUG] Best match for '{raw_token}': '{best_match}' with score {best_score}")
+
     return None
 
 
-def _fuzzy_match_modifier(raw: str, known_modifiers: set, threshold: float = 80, debug: bool = True) -> tuple[str, float] | None:
+def _fuzzy_match_modifier(raw: str, known_modifiers: set, threshold: float = 75, debug: bool = True) -> tuple[str, float] | None:
     best_score = 0
     best_match = None
     for candidate in known_modifiers:
