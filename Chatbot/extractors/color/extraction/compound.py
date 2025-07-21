@@ -16,6 +16,7 @@ Functions:
 """
 from typing import Set, List
 
+from Chatbot.extractors.color.llm.simplifier import simplify_phrase_if_needed
 from Chatbot.extractors.color.logic.compound_rule import is_blocked_modifier_tone_pair
 from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, should_suppress_compound, match_suffix_fallback
 from Chatbot.extractors.color.utils.token_utils import split_glued_tokens, singularize
@@ -322,6 +323,7 @@ def attempt_mod_tone_pair(
         print(f"[🔍 MOD CHECK] mod_candidate='{mod_candidate}'")
         print(f"[🔍 TONE CHECK] tone_candidate='{tone_candidate}'")
 
+    # ─── Try resolving modifier
     mod = resolve_modifier_token(
         mod_candidate,
         known_modifiers,
@@ -331,10 +333,22 @@ def attempt_mod_tone_pair(
     )
 
     if not mod:
-        if debug:
-            print(f"⛔ Rejected: modifier '{mod_candidate}' is not valid")
-        return
+        # ✅ CORRECT: simplify mod_candidate, not tone_candidate
+        simplified = simplify_phrase_if_needed(mod_candidate, known_modifiers, known_tones)
+        if simplified:
+            mod = simplified[0].split()[0]
+            if mod not in known_modifiers and mod not in known_tones:
+                if debug:
+                    print(f"⛔ Rejected: simplified modifier '{mod}' not in known sets")
+                return
+            if debug:
+                print(f"[✅ SIMPLIFIED MODIFIER] '{mod_candidate}' → '{mod}'")
+        else:
+            if debug:
+                print(f"⛔ Rejected: modifier '{mod_candidate}' is not valid")
+            return
 
+    # ─── Try resolving tone
     tone = resolve_modifier_token(
         tone_candidate,
         known_modifiers,
@@ -349,15 +363,30 @@ def attempt_mod_tone_pair(
             if debug:
                 print(f"[⚠️ FALLBACK] accepted tone='{tone}' via direct match")
         else:
+            # Try fallback simplification for tone
+            simplified = simplify_phrase_if_needed(tone_candidate, known_modifiers, known_tones)
             if debug:
-                print(f"⛔ Rejected: '{tone_candidate}' is not a strict tone")
-            return
+                print(f"[🧪 RAW SIMPLIFIED] {simplified}")
+            if simplified:
+                tone = simplified[0].split()[-1]
+                if tone not in known_tones and tone not in all_webcolor_names:
+                    if debug:
+                        print(f"⛔ Rejected: simplified tone '{tone}' not valid")
+                    return
+                if debug:
+                    print(f"[✅ SIMPLIFIED TONE] '{tone_candidate}' → '{tone}'")
+            else:
+                if debug:
+                    print(f"⛔ Rejected: '{tone_candidate}' is not a strict tone")
+                return
 
+    # ─── Filter suffixy fake tones unless they're real
     if (tone.endswith("y") or tone.endswith("ish")) and tone not in known_tones and tone not in all_webcolor_names:
         if debug:
             print(f"⛔ Rejected: tone='{tone}' looks suffixy and is not a real tone")
         return
 
+    # ─── Final suppression rule
     if should_suppress_compound(mod, tone):
         if debug:
             print(f"[⛔ SUPPRESSED] {mod} {tone}")
@@ -368,4 +397,3 @@ def attempt_mod_tone_pair(
     raw_compounds.append(compound)
     if debug:
         print(f"[✅ COMPOUND DETECTED] → '{compound}'")
-

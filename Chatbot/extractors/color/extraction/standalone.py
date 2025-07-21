@@ -6,10 +6,8 @@ standalone.py
 Handles extraction of standalone tone/modifier terms,
 including simplified and injected expressions.
 """
-
+from Chatbot.extractors.color.llm.simplifier import simplify_phrase_if_needed
 from Chatbot.extractors.color.shared.constants import COSMETIC_NOUNS
-from Chatbot.extractors.color.utils.config_loader import load_json_from_data_dir
-from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token, fuzzy_match_modifier_safe
 from Chatbot.extractors.general.utils.fuzzy_match import normalize_token, match_expression_aliases
 
 
@@ -55,63 +53,134 @@ def is_suffix_variant(word: str, base: str, debug=False) -> bool:
         print(f"[❌ NOT A SUFFIX VARIANT] (word='{word}', base='{base}')")
     return False
 
+from Chatbot.extractors.color.utils.config_loader import load_json_from_data_dir
 
-def _inject_expression_modifiers(tokens, known_modifiers, debug):
-    """
-    Injects modifier terms from matched style expressions and direct token matching.
+expression_map = load_json_from_data_dir("expression_definition.json")
 
-    - Detects expression aliases using match_expression_aliases().
-    - Injects known modifiers tied to expressions (e.g., "romantic" → ["soft", "rosy"]).
-    - Also directly adds tokens that match known_modifiers via fuzzy match.
 
-    Args:
-        tokens (List[spacy.tokens.Token]): spaCy tokens
-        known_modifiers (Set[str]): Known modifiers
-        debug (bool): If True, prints debug logs
+import re
+from Chatbot.extractors.color.utils.modifier_resolution import resolve_modifier_token
+from Chatbot.extractors.color.utils.config_loader import load_json_from_data_dir
+from Chatbot.extractors.general.utils.fuzzy_match import match_expression_aliases
 
-    Returns:
-        Set[str]: Injected modifier terms
-    """
-    injected = set()
-    text = " ".join([t.text for t in tokens]).lower()
+expression_map = load_json_from_data_dir("expression_definition.json")
 
-    # ─── Load expressions
-    expression_def = load_json_from_data_dir("expression_definition.json")
-    matched = match_expression_aliases(text, expression_def)
-    if not isinstance(matched, set):
-        matched = set()
+
+def normalize_expression_input(text: str) -> str:
+    text = re.sub(r"\s*-\s*", "-", text.lower())
+    return re.sub(r"\s+", " ", text).strip()
+
+from nltk.corpus import wordnet
+def _inject_expression_modifiers(tokens, known_modifiers, known_tones, expression_map, debug=False):
+    def _synonym_candidates(word):
+        syns = set()
+        for synset in wordnet.synsets(word):
+            for lemma in synset.lemmas():
+                lemma_name = lemma.name().replace("_", " ").lower()
+                syns.add(lemma_name)
+        return syns
+
+    token_texts = [t.text for t in tokens]
+    raw_text = normalize_expression_input(" ".join(token_texts))
 
     if debug:
-        print(f"[🧠 MATCHED EXPRESSIONS] {matched}")
+        print("\n[🧪 TOKENS]")
+        for idx, t in enumerate(tokens):
+            print(f"  {idx:02d}: '{t.text}' (POS={t.pos_})")
 
-    for expr in matched:
-        mods = expression_def.get(expr, {}).get("modifiers", [])
-        valid = [m for m in mods if m in known_modifiers]
+        print(f"\n[🧼 RAW TEXT] → '{raw_text}'")
+        print(f"[📚 EXPRESSION MAP SIZE] → {len(expression_map)}")
+
+    matched_expressions = set()
+
+    # ── Step 1: Forward match by alias or expression
+    if debug:
+        print("\n[🔍 DIRECT SPAN MATCHES]")
+    for n in range(1, 4):
+        for i in range(len(token_texts) - n + 1):
+            span = " ".join(token_texts[i:i + n])
+            norm_span = normalize_expression_input(span)
+            matches = match_expression_aliases(norm_span, expression_map)
+
+            if debug:
+                print(f"  [SPAN] '{span}' → normalized: '{norm_span}'")
+                if matches:
+                    print(f"    ✅ Matched expressions: {matches}")
+                else:
+                    print("    ❌ No match")
+
+            if matches:
+                matched_expressions.update(matches)
+
+    # ── Step 1B: Synonym fallback if no direct match
+    if not matched_expressions:
         if debug:
-            print(f"[🎯 INJECTED] '{expr}' → {valid}")
-        injected.update(valid)
-
-    # ─── Direct + fuzzy token resolution
-    for tok in tokens:
-        word = normalize_token(tok.text)
-        if tok.pos_ == "NOUN" and word in COSMETIC_NOUNS:
+            print("\n[🧠 SYNONYM FALLBACK]")
+        for token in tokens:
+            synonyms = _synonym_candidates(token.text)
             if debug:
-                print(f"[⛔ SKIP] '{word}' (cosmetic noun)")
-            continue
+                print(f"  [WORD] '{token.text}' → Synonyms: {sorted(synonyms)}")
 
-        if word in known_modifiers:
-            injected.add(word)
-            if debug:
-                print(f"[✅ DIRECT] '{word}'")
-        else:
-            fuzzy = fuzzy_match_modifier_safe(word, known_modifiers)
-            if fuzzy:
-                injected.add(fuzzy)
+            for syn in synonyms:
+                norm_syn = normalize_expression_input(syn)
+                matches = match_expression_aliases(norm_syn, expression_map)
+
+                if matches:
+                    matched_expressions.update(matches)
+                    if debug:
+                        print(f"    ✅ Matched via synonym '{syn}' → {matches}")
+
+    # ── Step 2: Reverse modifier match (only if forward+synonym failed)
+    if not matched_expressions:
+        if debug:
+            print("\n[🔁 REVERSE MODIFIER INJECTION]")
+        for token in tokens:
+            resolved = resolve_modifier_token(
+                token.text,
+                known_modifiers,
+                known_tones,
+                allow_fuzzy=True,
+                is_tone=False
+            )
+
+            if resolved == token.text:
                 if debug:
-                    print(f"[✨ FUZZY] '{word}' → '{fuzzy}'")
+                    print(f"  ⛔ Skipping reverse match: '{token.text}' resolved to itself")
+                continue
 
-    return injected
+            if debug:
+                print(f"  [TOKEN] '{token.text}' → Resolved: '{resolved}'")
 
+            if resolved:
+                for expr, conf in expression_map.items():
+                    mod_set = conf.get("modifiers", [])
+                    if resolved in mod_set:
+                        matched_expressions.add(expr)
+                        if debug:
+                            print(f"    ✅ Modifier '{resolved}' found in expression '{expr}'")
+
+    # ── Step 3: Inject modifiers from matched expressions
+    injected_modifiers = set()
+    if debug:
+        print("\n[🧩 MODIFIER INJECTION]")
+    for expr in matched_expressions:
+        mod_candidates = expression_map.get(expr, {}).get("modifiers", [])
+        if debug:
+            print(f"  [EXPR] '{expr}' → Modifiers: {sorted(mod_candidates)}")
+
+        for mod in mod_candidates:
+            if mod in known_modifiers:
+                injected_modifiers.add(mod)
+                if debug:
+                    print(f"    ✅ Injected modifier: '{mod}'")
+            else:
+                if debug:
+                    print(f"    ⛔ Skipped unknown modifier: '{mod}'")
+
+    if debug:
+        print(f"\n[✅ FINAL INJECTED MODIFIERS] → {sorted(injected_modifiers)}\n")
+
+    return injected_modifiers
 def _extract_filtered_tokens(tokens, known_modifiers, known_tones, debug):
     result = set()
 
@@ -134,8 +203,19 @@ def _extract_filtered_tokens(tokens, known_modifiers, known_tones, debug):
                 print(f"[⛔ SKIPPED] Connector '{raw}' ignored (POS=CCONJ)")
             continue
 
-        # ✅ Resolve token
+        # ✅ First: try rule-based resolver
         resolved = resolve_modifier_token(raw, known_modifiers, known_tones)
+
+        # 🔁 If nothing matched, fallback to LLM simplifier
+        if not resolved:
+            simplified = simplify_phrase_if_needed(raw, known_modifiers, known_tones)
+            if simplified and simplified[0].strip():
+                resolved_candidate = simplified[0].strip().split()[0]
+
+                if resolved_candidate in known_modifiers or resolved_candidate in known_tones:
+                    resolved = resolved_candidate
+                    if debug:
+                        print(f"[🔁 SIMPLIFIED FALLBACK] '{raw}' → '{resolved}'")
 
         if debug:
             print(f"[🔍 RESOLVED] '{raw}' → '{resolved}'")
@@ -176,7 +256,6 @@ def _extract_filtered_tokens(tokens, known_modifiers, known_tones, debug):
                 print(f"[🎯 STANDALONE MATCH] '{raw}' → '{resolved}'")
 
     return result
-
 def _finalize_standalone_phrases(injected, filtered, debug):
     combined = injected.union(filtered)
     if debug:

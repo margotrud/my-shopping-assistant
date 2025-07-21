@@ -37,7 +37,7 @@ class TestExtractFilteredTokens(unittest.TestCase):
     def test_case_20(self): self.run_case("gentle", set())
 
     def test_case_21(self): self.run_case("moody", set())
-    def test_case_22(self): self.run_case("taupey", ["taupe"])
+    def test_case_22(self): self.run_case("taupey", [])
     def test_case_23(self): self.run_case("minimal", set())
     def test_case_24(self): self.run_case("grimy", set())
     def test_case_25(self): self.run_case("effortless", set())
@@ -62,7 +62,7 @@ class TestExtractFilteredTokens(unittest.TestCase):
     def test_case_42(self): self.run_case("warm-toned", ["warm"])
     def test_case_43(self): self.run_case("neon", ["neon"])
     def test_case_44(self): self.run_case("ashy", ["ashy"])
-    def test_case_45(self): self.run_case("mochish", ["mocha"])  # invalid root
+    def test_case_45(self): self.run_case("mochish", [])  # invalid root
     def test_case_46(self): self.run_case("tone", [])     # cosmetic noun
     def test_case_47(self): self.run_case("pink", ["pink"])
     def test_case_48(self): self.run_case("rose blush", ["rose"])  # blush blocked

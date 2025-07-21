@@ -71,3 +71,4 @@ def build_color_sentiment_summary(
         "base_rgb": base_rgb,
         "threshold": RGB_THRESHOLD
     }
+

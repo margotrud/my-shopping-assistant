@@ -24,7 +24,7 @@ class TestAttemptModTonePair(unittest.TestCase):
             known_modifiers=self.known_modifiers,
             known_tones=self.known_tones,
             all_webcolor_names=self.webcolors,
-            debug=False
+            debug=True
         )
         result = next(iter(compounds)) if compounds else None
         print(f"\n[INPUT] mod_candidate='{mod_candidate}', tone_candidate='{tone_candidate}'")

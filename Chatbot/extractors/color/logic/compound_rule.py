@@ -49,3 +49,4 @@ def is_blocked_modifier_tone_pair(
     pair = (normalize_token(modifier), normalize_token(tone))
     reverse = (normalize_token(tone), normalize_token(modifier))
     return pair in blocked_pairs or reverse in blocked_pairs
+
